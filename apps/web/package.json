@@ -4,10 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/build-site.mjs",
-    "predev": "node scripts/build-site.mjs",
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/build-site.mjs && next dev",
+    "build": "node scripts/build-site.mjs && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
@@ -18,7 +16,9 @@
     "@electric-sql/pglite": "^0.5.15",
     "@entoli/analyzer": "workspace:*",
     "@entoli/sdk": "workspace:*",
+    "@entoli/tester": "workspace:*",
     "@neondatabase/serverless": "^1.2.0",
+    "@vercel/analytics": "^2.0.1",
     "diff": "^8.0.4",
     "drizzle-orm": "^0.45.4",
     "next": "^16.4.5",
@@ -26,8 +26,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "stripe": "^23.1.0",
-    "tar": "^7.5.22",
-    "@entoli/tester": "workspace:*"
+    "tar": "^7.5.22"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

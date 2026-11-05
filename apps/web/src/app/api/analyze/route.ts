@@ -6,6 +6,7 @@ import { getDb } from '@/db';
 import { analyses, apps } from '@/db/schema';
 import { getApp } from '@/lib/apps';
 import { queueAnalysis, runAnalysis } from '@/lib/analysis';
+import { hit } from '@/lib/ratelimit';
 import { requireUser } from '@/lib/session';
 
 export const maxDuration = 300;
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest) {
   const db = await getDb();
   const app = body.appId ? await getApp(db, user.id, body.appId) : null;
   if (!app) return NextResponse.json({ error: 'app not found' }, { status: 404 });
+  if (!(await hit(db, `analyze:${user.id}`, 10, 3_600_000)).ok) return NextResponse.json({ error: 'rate limit' }, { status: 429 });
   const q = await queueAnalysis(db, app);
   if ('error' in q) return NextResponse.json(q, { status: 409 });
   after(() => runAnalysis(db, app, q.id));

@@ -126,6 +126,8 @@ export async function startAnalysisAction(appId: string) {
   const db = await getDb();
   const app = await getApp(db, user.id, appId);
   if (!app) redirect('/dashboard');
+  const { hit } = await import('@/lib/ratelimit');
+  if (!(await hit(db, `analyze:${user.id}`, 10, 3_600_000)).ok) redirect(`/dashboard/apps/${appId}/analyze?error=${encodeURIComponent('Ten analyses an hour at most. Try again later.')}`);
   const { queueAnalysis, runAnalysis } = await import('@/lib/analysis');
   const q = await queueAnalysis(db, app);
   if ('error' in q) redirect(`/dashboard/apps/${appId}/analyze?error=${encodeURIComponent(q.error)}`);
@@ -222,6 +224,8 @@ export async function startIntegrationAction(appId: string, form: FormData) {
   if (!skill) redirect(`/dashboard/apps/${appId}/integrate?error=${q('Analyze the repository first.')}`);
   const answers = parseAnswers({ ...Object.fromEntries(form.entries()), features: form.getAll('features') }, skill);
   if ('error' in answers) redirect(`/dashboard/apps/${appId}/integrate?error=${q(answers.error)}`);
+  const { hit } = await import('@/lib/ratelimit');
+  if (!(await hit(db, `integrate:${user.id}`, 6, 3_600_000)).ok) redirect(`/dashboard/apps/${appId}/integrate?error=${q('Six integrations an hour at most. Try again later.')}`);
   const row = await startIntegration(db, app, answers);
   const { after } = await import('next/server');
   const { fetchRepo } = await import('@/lib/repo-fetch');

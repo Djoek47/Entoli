@@ -149,5 +149,16 @@ ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 - On Vercel there is no local browser: set `BROWSER_WS_ENDPOINT` (e.g. a hosted Chromium service) or use the CI upload.
 - Pages behind a login are walked as an anonymous visitor.
 
+## M9 — Launch polish — done
+
+**Real**
+- Public pages: `/docs` (quickstart in 3 steps), `/docs/skill` (format), `/docs/safety` (safety model), `/pricing`; `/terms` and `/privacy` as clearly marked drafts for counsel.
+- 404 and error pages; empty states across the dashboard.
+- Rate limits: intent API per key, analyses (10/h per user), integrations (6/h), CI report uploads (30/h per app).
+- Analytics: Vercel Web Analytics (cookie-less) on the dashboard and the marketing page.
+- Build fix: the web build now runs its site/SDK/analyzer/tester step explicitly (pnpm does not run `prebuild` hooks), so Vercel builds what was tested.
+- `README.md`: what Entoli is, 3-step integration, repository layout, local run, deploy.
+- Production build clean (no warnings); 107 tests across 5 packages.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

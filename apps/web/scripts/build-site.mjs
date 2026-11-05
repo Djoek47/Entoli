@@ -52,6 +52,7 @@ html = html.slice(0, start) + `function go(id) { var t = $(id); if (!t) return; 
 must(html.includes('</body>'), '</body>');
 html = html.replace('</body>', `<style>.ask .entoli{margin:0 auto;max-width:720px;display:flex;flex-direction:column-reverse}.ask .entoli-bar{border-radius:999px;width:100%;max-width:none;margin:0}.ask .entoli-stage{max-height:55vh;overflow:auto}</style>
 <script>window.__entoliConfig = ${JSON.stringify({ key: process.env.NEXT_PUBLIC_ENTOLI_SITE_KEY || undefined, endpoint: process.env.NEXT_PUBLIC_ENTOLI_ENDPOINT || undefined })};</script>
+<script defer src="/_vercel/insights/script.js"></script>
 <script src="/entoli.min.js"></script>
 <script src="/site-entoli.js"></script>
 </body>`);
