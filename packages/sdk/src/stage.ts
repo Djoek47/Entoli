@@ -100,7 +100,7 @@ function injectOnce(doc: Document, fonts: boolean): void {
 }
 
 const KICKER: Partial<Record<StageState['phase'], string>> = {
-  hold: 'Doing this', confirm: 'Needs a yes', exact: 'Do exactly this', ask: 'One thing missing',
+  hold: 'Doing this', confirm: 'Needs a yes', exact: 'Exactly this', ask: 'One thing missing',
   narrow: 'Which one?', blocked: 'Not by typing', answer: 'From this app', none: 'Not here',
   running: 'Working', done: 'Done', error: 'Stopped', thinking: 'Reading',
 };

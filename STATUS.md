@@ -48,5 +48,27 @@ pnpm --filter @entoli/example-notes test
 ```
 Vercel: new project, Root Directory `examples/notes-app`, framework Vite (its `vercel.json` sets the rest). The SDK is compiled from source via a Vite alias, so no separate build step.
 
-## Marketing site
-The original static page is in `site/` unchanged. On Vercel, until `apps/web` exists, set the project's Root Directory to `site` (Framework: Other, no build).
+## M3 — `apps/web` (Next.js 16, App Router) — done
+
+**Real**
+- `/` is the original marketing page, served byte-for-byte from `site/index.html` except the "Ask Entoli" bar, which now runs on `@entoli/sdk` with its own skill (`apps/web/site/site.skill.json`): navigation acts hold 1.6 s, "connect github" is external and shows "Do exactly this", questions answer from the site's knowledge. `scripts/build-site.mjs` does the transform at build time; `site/` stays the source of truth.
+- `/login`: GitHub OAuth via Auth.js (read-only identity scopes). JWT sessions; users upserted by GitHub id.
+- `/dashboard`: list and create apps (name + repo). Per app: Map (tree + acts table with contract), Knowledge (add/remove), Skill (JSON editor, validated on save, draft/publish, download; publishing L2 requires the L2 plan), Keys (create shown once via the action response, only sha256 stored, revoke), Usage (this month vs plan, estimate, model cost).
+- Every data function is owner-scoped; another user's app id 404s.
+- Repo connection: GitHub App install link + `/api/github/setup` callback; installation kept only if it can see the repo. App JWT (RS256) and read-only installation tokens are implemented and tested.
+- Postgres via Drizzle: Neon HTTP driver in production; PGlite (in-process) for local dev and tests, same migrations (`drizzle/`).
+- 8 tests (data layer on real Postgres-in-WASM, GitHub JWT). Browser walkthrough: site bar → exact card → login → create app → paste skill → map → key shown once → invalid skill refused.
+
+**Stubbed / later**
+- Tabs Analyze, Billing, Guided integration, Test are placeholders until M4/M6/M7/M8.
+- Without `AUTH_GITHUB_ID/SECRET`, dev mode signs you in as a local "dev" user (never in production).
+
+**Run**
+```bash
+pnpm --filter @entoli/web dev     # http://localhost:3000, no env needed
+pnpm --filter @entoli/web test
+```
+Deploy: Vercel project with Root Directory `apps/web` (Next.js). Set `DATABASE_URL`, `AUTH_*`, `GITHUB_APP_*`, then `pnpm --filter @entoli/web db:migrate` once against the database.
+
+## Static site
+`site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

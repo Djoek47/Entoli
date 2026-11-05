@@ -1,0 +1,48 @@
+{
+  "entoli": "0.1",
+  "app": { "name": "Entoli site", "id": "entoli-site" },
+  "layer": "L1",
+  "mode": "voice",
+  "map": [
+    { "id": "page", "kind": "screen", "title": "Entoli", "path": "/" },
+    { "id": "how", "kind": "link", "title": "How it works", "parent": "page", "selector": "#how", "act": "page.go" },
+    { "id": "layers", "kind": "link", "title": "Layers", "parent": "page", "selector": "#layers" },
+    { "id": "studio", "kind": "screen", "title": "Studio", "parent": "page", "selector": "#studio", "act": "studio.tab" },
+    { "id": "integrate", "kind": "link", "title": "Integrate", "parent": "page", "selector": "#integrate" },
+    { "id": "pricing", "kind": "link", "title": "Pricing", "parent": "page", "selector": "#pricing" },
+    { "id": "signin", "kind": "button", "title": "Connect GitHub", "parent": "page", "selector": "[data-go=connect]", "act": "account.connect" },
+    { "id": "theme", "kind": "button", "title": "Theme", "parent": "page", "selector": "#theme", "act": "page.theme" }
+  ],
+  "knowledge": [
+    { "topic": "share notes", "can": false, "answer": "The sample notes app can't share notes. That's on its \"can't\" list, so it says so instead of guessing." },
+    { "topic": "export to PDF", "can": false, "answer": "The sample notes app can't export to PDF." },
+    { "topic": "voice", "can": true, "answer": "Yes. Text resolves on the device; voice and unclear phrases go to the model and are metered.", "phrases": ["speak", "talk to it", "microphone"] },
+    { "topic": "pricing free plan", "can": true, "answer": "Yes. The Developer plan is $0: one app, Layer 1, text, 1,000 intents a month.", "phrases": ["free", "cost", "price"] },
+    { "topic": "layer three operating system", "can": false, "answer": "Not yet. Layer 3, the operating system, is coming. Layers 1 and 2 are available now.", "phrases": ["layer 3", "linux", "os"] },
+    { "topic": "private repositories", "can": true, "answer": "Yes, through the Entoli GitHub App with read-only access to the repositories you pick.", "phrases": ["private repo"] },
+    { "topic": "invent actions", "can": false, "answer": "No. The AI only chooses among the acts your app declares; it can't invent one.", "phrases": ["make things up", "hallucinate"] },
+    { "topic": "react", "can": true, "answer": "Yes. useEntoli wires a component's function; plain JS uses defineAct.", "phrases": ["vue", "javascript", "framework"] }
+  ],
+  "acts": [
+    { "name": "page.go", "title": "Go to", "phrases": ["show me", "go to", "take me to", "show", "open"], "radius": "self", "undo": true,
+      "slots": { "section": { "type": "choice", "required": true, "label": "Section", "prompt": "Which part of the page?", "options": [
+        { "value": "how", "label": "How it works", "aliases": ["how", "steps"] },
+        { "value": "layer-1", "label": "Layer 1: Control", "aliases": ["layer one", "layer 1", "control"] },
+        { "value": "layer-2", "label": "Layer 2: Integrated", "aliases": ["layer two", "layer 2", "integrated"] },
+        { "value": "layer-3", "label": "Layer 3: System", "aliases": ["layer three", "layer 3", "system", "kernel"] },
+        { "value": "studio", "label": "Studio", "aliases": ["the studio"] },
+        { "value": "integrate", "label": "Integrate", "aliases": ["sdk", "docs", "install", "mcp"] },
+        { "value": "pricing", "label": "Pricing", "aliases": ["price", "plans", "cost"] },
+        { "value": "top", "label": "Top", "aliases": ["home", "start", "the top"] } ] } } },
+    { "name": "studio.walk", "title": "Walk every path in the sample app", "phrases": ["walk the app", "walk", "crawl", "map the app"], "radius": "self", "undo": true,
+      "slots": { "app": { "type": "freeText", "label": "App" } } },
+    { "name": "studio.tab", "title": "Open a Studio tab", "phrases": ["open the", "studio"], "radius": "self", "undo": true,
+      "slots": { "tab": { "type": "choice", "required": true, "label": "Tab", "options": [
+        { "value": "connect", "label": "Analysis tab", "aliases": ["analysis"] }, { "value": "map", "label": "Map" }, { "value": "know", "label": "Knowledge", "aliases": ["teach"] },
+        { "value": "skill", "label": "Skill", "aliases": ["skill file", "json", "manifest"] }, { "value": "guide", "label": "Guided integration", "aliases": ["guided", "interview"] } ] } } },
+    { "name": "page.theme", "title": "Change theme", "phrases": ["theme", "switch to", "mode"], "radius": "self", "undo": true,
+      "slots": { "theme": { "type": "choice", "required": true, "label": "Theme", "options": [{ "value": "dark", "aliases": ["dark mode", "night"] }, { "value": "light", "aliases": ["light mode"] }] } } },
+    { "name": "account.connect", "title": "Sign in with GitHub", "phrases": ["connect github", "sign in", "log in", "connect my repo", "get started", "analyze my app"], "radius": "external",
+      "slots": { "to": { "type": "freeText", "label": "Goes to" } } }
+  ]
+}
