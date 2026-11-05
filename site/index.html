@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Entoli: the AIUIC for developers. Connect your codebase, map your app, and ship a skill that lets users run it by text or voice.">
+<title>Entoli</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single column of chapters on a graphite field; the ouroboros ring anchors the hero,
+   the Studio is the working centre, and an "Ask Entoli" bar docks at the bottom of every view. */
+:root {
+  --bg: #FAFAF7; --bg-2: #F0F1EC; --card: #FFFFFF; --ink: #0E0F0C; --dim: #5A5D55; --line: rgba(14,15,12,.12);
+  --copper: #0E0F0C; --copper-2: #2A2C26; --verd: #4F7A00; --verd-2: #A6E01C; --warn: #8A5A00;
+  --lime: #A6E01C;
+  --display: "Sora", "Hanken Grotesk", system-ui, sans-serif;
+  --body: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --glow: 0 20px 60px -30px rgba(120,170,10,.45);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0B0C0A; --bg-2: #141612; --card: #161814; --ink: #F2F3EE; --dim: #9A9E93; --line: rgba(242,243,238,.10);
+  --copper: #F2F3EE; --copper-2: #D8DAD2; --verd: #A6E01C; --verd-2: #C8F25A; --warn: #E5B04B; --lime: #A6E01C;
+  --glow: 0 24px 70px -30px rgba(166,224,28,.4); color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0B0C0A; --bg-2: #141612; --card: #161814; --ink: #F2F3EE; --dim: #9A9E93; --line: rgba(242,243,238,.10);
+  --copper: #F2F3EE; --copper-2: #D8DAD2; --verd: #A6E01C; --verd-2: #C8F25A; --warn: #E5B04B; --lime: #A6E01C;
+  --glow: 0 24px 70px -30px rgba(166,224,28,.4); color-scheme: dark; }
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 var(--body);
+  background-image: radial-gradient(900px 500px at 85% -10%, color-mix(in srgb, var(--verd) 14%, transparent), transparent 65%),
+                    radial-gradient(700px 500px at -10% 30%, color-mix(in srgb, var(--copper) 10%, transparent), transparent 60%);
+  background-attachment: fixed; padding-bottom: 96px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+a { color: var(--verd); }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+h2 { font: 700 clamp(26px, 4vw, 40px)/1.1 var(--display); letter-spacing: -.02em; }
+h3 { font: 600 19px/1.3 var(--body); }
+p { margin: 0; }
+.eyebrow { font: 500 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--copper); }
+.lede { color: var(--dim); max-width: 62ch; font-size: 18px; }
+section { padding-block: 72px; scroll-margin-top: 72px; }
+.head { display: grid; gap: 14px; margin-bottom: 36px; }
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--verd); outline-offset: 2px; }
+
+/* Top bar */
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent); border-bottom: 1px solid var(--line); }
+.top .wrap { display: flex; align-items: center; gap: 18px; min-height: 60px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font: 700 18px var(--display); letter-spacing: .02em; }
+.brand .i { position: relative; } .brand .i::before { content: ""; position: absolute; left: 50%; top: .08em; width: .19em; height: .19em; transform: translateX(-50%); background: var(--lime); }
+nav.links { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+nav.links a { color: var(--dim); text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
+nav.links a:hover { color: var(--ink); background: var(--bg-2); }
+.pill { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); }
+.icon-btn { border: 1px solid var(--line); background: transparent; border-radius: 10px; width: 36px; height: 36px; cursor: pointer; display: grid; place-items: center; }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); cursor: pointer; font-weight: 600; text-decoration: none; color: var(--ink); transition: transform .15s ease, border-color .15s ease; }
+.btn:hover { transform: translateY(-1px); border-color: var(--verd); }
+.btn.primary { background: var(--lime); color: #0E0F0C; border: 0; box-shadow: var(--glow); }
+.btn.copper { background: var(--ink); color: var(--bg); border: 0; }
+.btn.small { padding: 7px 12px; font-size: 14px; border-radius: 10px; }
+
+/* Hero */
+.hero { padding-block: 64px 48px; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 40px; align-items: center; }
+.hero h1 { font: 700 clamp(40px, 7vw, 84px)/.98 var(--display); letter-spacing: -.035em; }
+.hero h1 em { font-style: normal; color: var(--verd); }
+.hero .lede { margin-top: 18px; }
+.hero .ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 28px; }
+.hero .meta { margin-top: 22px; color: var(--dim); font: 13px var(--mono); }
+.ring { width: 100%; max-width: 440px; aspect-ratio: 400 / 260; justify-self: center; position: relative; }
+.ring svg { width: 100%; height: 100%; overflow: visible; }
+.ring .b { transform-box: fill-box; transform-origin: center; animation: talk 1.6s ease-in-out infinite; } .ring .b2 { animation-delay: .15s; } .ring .b3 { animation-delay: .3s; } .ring .b4 { animation-delay: .45s; }
+@keyframes talk { 0%,100% { transform: scaleY(1); } 50% { transform: scaleY(.55); } }
+.ring .pulse { animation: pulse 3.4s ease-in-out infinite; }
+.ring .flow { stroke-dasharray: 6 14; animation: flow 3s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+@keyframes flow { to { stroke-dashoffset: -40; } }
+@media (prefers-reduced-motion: reduce) { .ring .b { animation: none; } html { scroll-behavior: auto; } }
+
+/* Steps */
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; counter-reset: s; }
+.steps li { counter-increment: s; border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: color-mix(in srgb, var(--card) 85%, transparent); display: grid; gap: 8px; align-content: start; }
+.steps li::before { content: counter(s, decimal-leading-zero); font: 500 13px var(--mono); color: var(--copper); }
+.steps p { color: var(--dim); font-size: 15px; }
+
+/* Layers */
+.layers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.layer { border-radius: 20px; padding: 24px; border: 1px solid var(--line); background: var(--card); display: grid; gap: 12px; align-content: start; position: relative; overflow: hidden; }
+.layer .n { font: 700 54px/1 var(--display); color: transparent; -webkit-text-stroke: 1px var(--verd); }
+.layer.l2 .n { -webkit-text-stroke-color: var(--ink); }
+.layer.l3 { background: transparent; border-style: dashed; }
+.layer.l3 .n { -webkit-text-stroke-color: var(--dim); }
+.layer ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 15px; display: grid; gap: 4px; }
+.tag { justify-self: start; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: var(--bg-2); color: var(--dim); }
+.tag.live { background: color-mix(in srgb, var(--verd) 16%, transparent); color: var(--verd); }
+.modes { margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.mode { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 6px; }
+.meter { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: inherit; background: var(--lime); }
+.mode small { color: var(--dim); font: 12px var(--mono); }
+
+/* Studio */
+.studio { border: 1px solid var(--line); border-radius: 24px; background: var(--card); box-shadow: var(--glow); overflow: hidden; }
+.studio-bar { display: flex; gap: 6px; padding: 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; background: var(--bg-2); }
+.tab { border: 0; background: transparent; padding: 8px 12px; border-radius: 10px; cursor: pointer; color: var(--dim); font-weight: 600; font-size: 14px; }
+.tab[aria-selected="true"] { background: var(--card); color: var(--ink); box-shadow: 0 1px 0 var(--line); }
+.tab .k { font: 500 11px var(--mono); color: var(--copper); margin-right: 6px; }
+.panel { padding: 24px; display: grid; gap: 18px; min-height: 380px; }
+.note { font: 12px var(--mono); color: var(--warn); }
+.repo { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.repo input { flex: 1 1 260px; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-family: var(--mono); font-size: 14px; }
+.log { font: 13px/1.7 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; min-height: 180px; overflow-x: auto; white-space: pre-wrap; }
+.log .ok { color: var(--verd); } .log .c { color: var(--copper); } .log .d { color: var(--dim); }
+.found { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.found div { border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.found b { display: block; font: 700 28px var(--display); font-variant-numeric: tabular-nums; }
+.found span { color: var(--dim); font-size: 13px; }
+
+.mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; }
+.cols { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
+.col { min-width: 170px; display: grid; gap: 6px; align-content: start; }
+.col h4 { margin: 0 0 4px; font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.node { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 11px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.node[aria-pressed="true"] { border-color: var(--verd); background: color-mix(in srgb, var(--verd) 10%, var(--bg)); }
+.node.visited::after { content: "●"; color: var(--verd); font-size: 10px; align-self: center; }
+.node .kind { font: 11px var(--mono); color: var(--dim); }
+.side { border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; align-content: start; }
+.side .cov { font: 700 32px var(--display); font-variant-numeric: tabular-nums; }
+.path { font: 12px var(--mono); color: var(--dim); overflow-wrap: anywhere; }
+
+.know { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.know .box { border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 8px; align-content: start; }
+.know h4 { margin: 0; font-size: 15px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; background: var(--bg); }
+.chip button { border: 0; background: none; cursor: pointer; color: var(--dim); padding: 0; }
+.chip.can { border-color: color-mix(in srgb, var(--verd) 45%, transparent); }
+.chip.cannot { border-color: color-mix(in srgb, var(--copper) 45%, transparent); }
+.addrow { display: flex; gap: 6px; }
+.addrow input { flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+pre.code { margin: 0; font: 13px/1.6 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 14px; padding: 16px; overflow-x: auto; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+/* Integrate + pricing */
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.card { border: 1px solid var(--line); border-radius: 20px; padding: 24px; background: var(--card); display: grid; gap: 12px; align-content: start; }
+.card ul { margin: 0; padding-left: 18px; color: var(--dim); display: grid; gap: 4px; }
+.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.plan { border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: grid; gap: 10px; align-content: start; background: var(--card); }
+.plan.feature { border-color: var(--verd); box-shadow: var(--glow); }
+.plan .cost { font: 500 13px var(--mono); color: var(--dim); }
+.plan ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 14px; display: grid; gap: 3px; }
+.waitlist { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+.waitlist input { flex: 1 1 240px; min-width: 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card); }
+.sw { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center; } .sw i { width: 28px; height: 28px; border-radius: 8px; } .sw code { font: 12px var(--mono); color: var(--dim); }
+.brandi { position: relative; } .brandi::before { content: ""; position: absolute; left: 50%; top: .08em; width: .19em; height: .19em; transform: translateX(-50%); background: var(--lime); }
+.interview { border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: grid; gap: 12px; background: var(--bg); }
+.interview .qn { font: 500 12px var(--mono); color: var(--dim); letter-spacing: .08em; }
+.interview .q { font: 600 20px/1.3 var(--display); }
+.interview .why { color: var(--dim); font-size: 14px; }
+.opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 10px 14px; cursor: pointer; font-weight: 600; text-align: left; }
+.opt[aria-pressed="true"] { border-color: var(--lime); background: color-mix(in srgb, var(--lime) 18%, var(--card)); }
+.opt small { display: block; font-weight: 400; color: var(--dim); font-size: 12.5px; }
+.answers { display: flex; flex-wrap: wrap; gap: 6px; }
+.planlist { display: grid; gap: 12px; }
+.feat { border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 10px; }
+.feat .top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.feat .st { font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: var(--bg-2); color: var(--dim); }
+.feat .st.done { background: color-mix(in srgb, var(--lime) 22%, transparent); color: var(--verd); }
+.diff { margin: 0; font: 12.5px/1.6 var(--mono); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 12px; overflow-x: auto; }
+.diff .add { color: var(--verd); } .diff .del { color: #B3261E; } .diff .f { color: var(--dim); }
+footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--dim); font-size: 14px; }
+
+/* Ask Entoli: the site, operated by intent */
+.ask { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); pointer-events: none; }
+.ask > * { pointer-events: auto; }
+.ask form { max-width: 720px; margin: 0 auto; display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: var(--glow); }
+.ask svg.mini { width: 24px; height: 24px; flex: none; }
+.ask input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 10px 4px; outline: none; }
+.ask .send { border: 0; border-radius: 999px; padding: 10px 16px; background: var(--lime); color: #0E0F0C; font-weight: 700; cursor: pointer; }
+.stage { max-width: 720px; margin: 0 auto 10px; border: 1px solid var(--verd); border-radius: 18px; background: var(--card); padding: 16px 18px; display: grid; gap: 10px; box-shadow: var(--glow); }
+.stage .kick { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--verd); }
+.stage .said { font-size: 13px; color: var(--dim); font-style: italic; }
+.stage .headline { font: 700 20px/1.25 var(--display); letter-spacing: -.01em; }
+.stage .rows { display: grid; gap: 6px; }
+.stage .r { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; border-radius: 10px; background: var(--bg); padding: 8px 10px; }
+.stage .r span { color: var(--dim); font: 12px var(--mono); }
+.stage .hold { height: 4px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
+.stage .hold i { display: block; height: 100%; background: var(--verd); width: 100%; transition: width linear; }
+.stage .why { font-size: 13px; color: var(--warn); }
+.stage .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.stage .out { border: 0; background: none; color: var(--dim); cursor: pointer; padding: 6px 0; text-decoration: underline; }
+.suggest { max-width: 720px; margin: 0 auto 8px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.suggest button { border: 1px solid var(--line); background: color-mix(in srgb, var(--card) 85%, transparent); border-radius: 999px; padding: 5px 10px; font-size: 13px; cursor: pointer; color: var(--dim); }
+.flash { outline: 2px solid var(--verd); outline-offset: 6px; border-radius: 16px; transition: outline-color .6s ease; }
+
+@media (max-width: 900px) {
+  .hero .wrap, .mapwrap, .two, .know { grid-template-columns: minmax(0, 1fr); }
+  .steps, .layers, .modes { grid-template-columns: minmax(0, 1fr); }
+  .plans, .found { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ring { max-width: 300px; }
+  nav.links { display: none; }
+}
+@media (max-width: 480px) { .plans, .found { grid-template-columns: minmax(0, 1fr); } .suggest { display: none; } }
+</style>
+
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- The mark: an electronic ouroboros. Scales are circuit segments; it bites its own tail. -->
+    <symbol id="ouro" viewBox="0 0 120 64">
+      <!-- The mark: a prompt that speaks. The chevron is the command; the cursor becomes a voice. -->
+      <path d="M8 16 L30 32 L8 48" fill="none" stroke="var(--ink)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <g stroke="var(--lime)" stroke-width="5.5" stroke-linecap="round">
+        <path d="M44 32 V32.1"/><path d="M56 26 V38"/><path d="M68 16 V48"/><path d="M80 6 V58"/><path d="M92 16 V48"/><path d="M104 26 V38"/><path d="M114 32 V32.1"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Entoli home"><svg viewBox="0 0 120 64" style="width:46px;height:26px"><use href="#ouro"/></svg><span>Entol<span class="i">ı</span></span></a>
+    <span class="pill">Developer preview</span>
+    <nav class="links" aria-label="Sections">
+      <a href="#how">How it works</a><a href="#layers">Layers</a><a href="#studio">Studio</a><a href="#integrate">Integrate</a><a href="#pricing">Pricing</a><a href="#brand">Brand</a>
+    </nav>
+    <button class="icon-btn" id="theme" type="button" aria-label="Switch light or dark">◐</button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">AIUIC for developers</span>
+        <h1>Give your app a mind that <em>knows every menu.</em></h1>
+        <p class="lede">Entoli reads your codebase, maps every screen, button and setting, learns what your app can and can't do, and turns it all into a skill. Your users then run your app by intent, typed or spoken.</p>
+        <div class="ctas">
+          <a class="btn primary" href="#studio" data-go="connect">Connect GitHub</a>
+          <a class="btn" href="#how">See how it works</a>
+        </div>
+        <p class="meta">This page runs on Entoli. Try the bar at the bottom: “show me layer two”.</p>
+      </div>
+      <div class="ring" aria-hidden="true">
+        <svg viewBox="0 0 400 260">
+          <path d="M30 70 L110 130 L30 190" fill="none" stroke="var(--ink)" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+          <g stroke="var(--lime)" stroke-width="16" stroke-linecap="round">
+            <path class="b b1" d="M160 130 V130.1"/><path class="b b2" d="M196 108 V152"/><path class="b b3" d="M232 74 V186"/><path class="b b4" d="M268 40 V220"/><path class="b b3" d="M304 74 V186"/><path class="b b2" d="M340 108 V152"/><path class="b b1" d="M372 130 V130.1"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">How it works</span><h2>From repository to a skill your app can use</h2>
+        <p class="lede">Six steps, in this order. You can do them yourself with our keys and docs, or let us do them for you over MCP.</p></div>
+      <ol class="steps">
+        <li><h3>Connect your code</h3><p>Sign in with GitHub and pick a repository. We read it; we never write to it unless you ask.</p></li>
+        <li><h3>Analyze</h3><p>AI finds your screens, menus, buttons, settings and the code behind each one, and learns your naming and style.</p></li>
+        <li><h3>Map the app</h3><p>Every path through the interface: this menu has two buttons, each opens two more, and so on, until the whole app can be navigated.</p></li>
+        <li><h3>Teach knowledge</h3><p>You say what the app can and can't do, so it never promises a feature it doesn't have.</p></li>
+        <li><h3>Train and test</h3><p>Try it in the Studio, correct what it gets wrong, and watch coverage climb until every path is reachable.</p></li>
+        <li><h3>Ship the skill</h3><p>One file, <code>entoli.skill.json</code>, plus the SDK. Your app is now operable by intent, with text or with voice.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="layers">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Integration depth</span><h2>Three layers. You choose how deep.</h2></div>
+      <div class="layers">
+        <article class="layer l1" id="layer-1">
+          <span class="n">L1</span><span class="tag live">Available now</span>
+          <h3>Control</h3>
+          <p>Entoli manages the features and controls you choose. It opens menus, fills forms and runs actions, always on a card the user can see and stop.</p>
+          <ul><li>You pick which features it may touch</li><li>Works from your UI map, no deep code access</li><li>Like ChoreMaxx: chores, rewards, calendars by voice</li></ul>
+        </article>
+        <article class="layer l2" id="layer-2">
+          <span class="n">L2</span><span class="tag live">Available now</span>
+          <h3>Integrated</h3>
+          <p>Entoli learns your codebase and style, then controls deeper parts of the app: settings, parameters and access. Changes to those are made by voice only, with a clear yes.</p>
+          <ul><li>Reads the code behind every screen</li><li>Settings and permissions by voice, confirmed</li><li>Like Circe et Venus: the whole platform, spoken</li></ul>
+        </article>
+        <article class="layer l3" id="layer-3">
+          <span class="n">L3</span><span class="tag">Coming</span>
+          <h3>System</h3>
+          <p>Below the app: Entoli built into the operating system itself, on our own Linux distribution. Every app on the machine, one mind.</p>
+          <ul><li>Kernel-level integration</li><li>Cross-app intent</li><li>In development</li></ul>
+        </article>
+      </div>
+      <div class="modes">
+        <div class="mode"><h3>Text mode</h3><div class="meter"><i style="width:32%"></i></div><small>Fewer AI calls · lower cost</small><p style="color:var(--dim);font-size:15px">Typed intent and taps. Most requests are resolved on the device from your map, without a model.</p></div>
+        <div class="mode"><h3>Voice mode</h3><div class="meter"><i style="width:82%"></i></div><small>More AI · higher cost</small><p style="color:var(--dim);font-size:15px">Spoken intent, speech back, and voice-only control of settings in Layer 2.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="studio">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">The Studio</span><h2>Bring your code. Watch it become operable.</h2>
+        <p class="lede">The full flow on a sample app. In this preview the GitHub connection and analysis are simulated; at launch the same Studio runs on your real repository.</p></div>
+      <div class="studio">
+        <div class="studio-bar" role="tablist" aria-label="Studio steps">
+          <button class="tab" role="tab" id="t-connect" aria-selected="true" data-tab="connect"><span class="k">1</span>Connect</button>
+          <button class="tab" role="tab" id="t-map" aria-selected="false" data-tab="map"><span class="k">2</span>Map</button>
+          <button class="tab" role="tab" id="t-know" aria-selected="false" data-tab="know"><span class="k">3</span>Knowledge</button>
+          <button class="tab" role="tab" id="t-skill" aria-selected="false" data-tab="skill"><span class="k">4</span>Skill</button>
+          <button class="tab" role="tab" id="t-guide" aria-selected="false" data-tab="guide"><span class="k">5</span>Guided integration</button>
+        </div>
+
+        <div class="panel" id="p-connect" role="tabpanel" aria-labelledby="t-connect">
+          <div class="repo">
+            <input id="repo" value="github.com/acme/notes-app" aria-label="Repository">
+            <button class="btn primary" id="analyze" type="button">Connect and analyze</button>
+          </div>
+          <p class="note">Preview: simulated on a sample repository. Nothing is read from GitHub yet.</p>
+          <div class="log" id="log" aria-live="polite"><span class="d">Waiting for a repository…</span></div>
+          <div class="found" id="found">
+            <div><b id="f-screens">0</b><span>screens</span></div>
+            <div><b id="f-controls">0</b><span>controls</span></div>
+            <div><b id="f-settings">0</b><span>settings</span></div>
+            <div><b id="f-paths">0</b><span>paths</span></div>
+          </div>
+        </div>
+
+        <div class="panel" id="p-map" role="tabpanel" aria-labelledby="t-map" hidden>
+          <div class="mapwrap">
+            <div class="cols" id="cols"></div>
+            <aside class="side">
+              <span class="eyebrow">Coverage</span>
+              <div class="cov" id="cov">0%</div>
+              <div class="meter"><i id="covbar" style="width:0%"></i></div>
+              <p class="path" id="path">Home</p>
+              <div class="row"><button class="btn small primary" id="walk" type="button">Walk every path</button><button class="btn small" id="resetmap" type="button">Reset</button></div>
+              <p style="color:var(--dim);font-size:13px">Entoli walks the tree the way a user would and marks each node it can reach.</p>
+            </aside>
+          </div>
+        </div>
+
+        <div class="panel" id="p-know" role="tabpanel" aria-labelledby="t-know" hidden>
+          <p class="lede" style="font-size:16px">Tell it what your app can and can't do. It answers from this list and never invents a feature.</p>
+          <div class="know">
+            <div class="box"><h4>It can</h4><div class="chips" id="can"></div>
+              <form class="addrow" data-list="can"><input id="add-can" placeholder="Add something it can do" aria-label="Add something it can do"><button class="btn small" type="submit">Add</button></form></div>
+            <div class="box"><h4>It can't</h4><div class="chips" id="cannot"></div>
+              <form class="addrow" data-list="cannot"><input id="add-cannot" placeholder="Add something it can't do" aria-label="Add something it can't do"><button class="btn small" type="submit">Add</button></form></div>
+          </div>
+          <p style="color:var(--dim);font-size:14px">Try asking the bar below: “can it share notes?” or “can it export to PDF?”</p>
+        </div>
+
+        <div class="panel" id="p-skill" role="tabpanel" aria-labelledby="t-skill" hidden>
+          <div class="row" style="justify-content:space-between">
+            <div class="row"><label for="layer-pick" class="eyebrow">Layer</label>
+              <select id="layer-pick" class="btn small"><option value="1">1 · Control</option><option value="2">2 · Integrated</option></select>
+              <label for="mode-pick" class="eyebrow">Mode</label>
+              <select id="mode-pick" class="btn small"><option value="text">Text</option><option value="voice">Voice</option></select></div>
+            <button class="btn small" id="copy" type="button">Copy skill</button>
+          </div>
+          <pre class="code" id="skill"></pre>
+        </div>
+        <div class="panel" id="p-guide" role="tabpanel" aria-labelledby="t-guide" hidden>
+          <p class="lede" style="font-size:16px">After payment, Entoli interviews you about your app, one question at a time, by voice or by tap. Each answer turns into real changes, feature by feature, that you approve before anything is written.</p>
+          <p class="note">Preview: questions and changes are generated for the sample app. At launch they come from your own repository.</p>
+          <div class="interview" id="interview"></div>
+          <div id="plan" class="planlist"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="integrate">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Integrate</span><h2>Do it yourself, or let us do it</h2></div>
+      <div class="two">
+        <div class="card"><span class="tag">Self-serve</span><h3>Your team integrates</h3>
+          <ul><li>API keys and the Entoli SDK</li><li>Full documentation and the skill format</li><li>The Studio to map, teach and test</li></ul>
+          <pre class="code">npm install @entoli/sdk
+
+import { mount } from '@entoli/sdk';
+import skill from './entoli.skill.json';
+
+mount({ el: '#app', skill, key: process.env.ENTOLI_KEY });</pre></div>
+        <div class="card"><span class="tag live">Managed</span><h3>We integrate over MCP</h3>
+          <ul><li>Pay once, connect your repository</li><li>We scan the whole app and build the first skill</li><li>Your team extends it from there</li></ul>
+          <pre class="code">// your MCP config
+{
+  "entoli": {
+    "url": "https://mcp.entoli.dev",
+    "repo": "acme/notes-app",
+    "layer": 2
+  }
+}</pre></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Pricing</span><h2>Pay for the depth and the voice</h2>
+        <p class="lede">Per app, per month. Text intents are cheap because most resolve on the device; voice is metered because every spoken turn costs speech and AI.</p></div>
+      <div class="plans">
+        <div class="plan"><h3>Developer</h3><span class="cost">$0</span><ul><li>1 app · Layer 1 · text</li><li>1,000 intents a month</li><li>Studio: map, teach, test</li></ul></div>
+        <div class="plan"><h3>Control · L1</h3><span class="cost">$49 / app / month</span><ul><li>25,000 text intents</li><li>Voice: $0.02 per spoken turn</li><li>Self-serve SDK and keys</li></ul></div>
+        <div class="plan feature"><h3>Integrated · L2</h3><span class="cost">$299 / app / month</span><ul><li>Learns code and style</li><li>100,000 text intents</li><li>Voice: $0.015 per turn</li><li>Settings and access by voice</li></ul></div>
+        <div class="plan"><h3>Managed</h3><span class="cost">From $2,500 once</span><ul><li>We scan and integrate over MCP</li><li>First skill built and tested</li><li>Then any monthly plan</li></ul></div>
+      </div>
+      <p class="note" style="margin-top:12px">Proposed launch pricing. Extra text intents $2 per 1,000. Layer 3 and enterprise: talk to us.</p>
+      <form class="waitlist" id="wait">
+        <label for="email" class="sr" style="position:absolute;left:-9999px">Email</label>
+        <input id="email" type="email" placeholder="you@company.com" required>
+        <button class="btn copper" type="submit">Join the preview</button>
+      </form>
+      <p class="note" id="waitmsg" style="margin-top:8px"></p>
+    </div>
+  </section>
+  <section id="brand">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Brand</span><h2>A prompt that speaks</h2>
+        <p class="lede">The chevron is the command line. The cursor becomes a voice. Black and white carry everything; lime is only for voice and action.</p></div>
+      <div class="two">
+        <div class="card" style="place-items:center;min-height:200px"><svg viewBox="0 0 120 64" style="width:180px;height:96px"><use href="#ouro"/></svg><span style="font:700 34px var(--display)">Entol<span class="brandi">ı</span></span></div>
+        <div class="card"><h3>Colours</h3>
+          <div class="sw"><i style="background:#0E0F0C"></i><b>Ink</b><code>#0E0F0C</code></div>
+          <div class="sw"><i style="background:#FAFAF7;border:1px solid var(--line)"></i><b>Paper</b><code>#FAFAF7</code></div>
+          <div class="sw"><i style="background:#A6E01C"></i><b>Voice lime</b><code>#A6E01C</code></div>
+          <div class="sw"><i style="background:#4F7A00"></i><b>Lime for text on light</b><code>#4F7A00</code></div>
+          <h3 style="margin-top:8px">Type</h3><p style="color:var(--dim)">Sora for the name and headings, Hanken Grotesk for reading, JetBrains Mono for code and labels.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap row" style="justify-content:space-between">
+  <span>Entoli · the AIUIC for developers · by Kairos</span><span style="font-family:var(--mono);font-size:12px">ἐντολή · a command</span>
+</div></footer>
+
+<div class="ask" id="ask">
+  <div class="stage" id="stage" hidden></div>
+  <div class="suggest" id="suggest">
+    <button type="button">show me layer two</button><button type="button">connect github</button><button type="button">walk the app</button><button type="button">can it share notes?</button><button type="button">dark mode</button>
+  </div>
+  <form id="askf" autocomplete="off">
+    <svg class="mini" viewBox="0 0 120 64" style="width:38px;height:20px" aria-hidden="true"><use href="#ouro"/></svg>
+    <input id="q" placeholder="Ask Entoli to do anything on this page…" aria-label="Ask Entoli">
+    <button class="send" type="submit">Go</button>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  function el(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x !== undefined) e.textContent = x; return e; }
+
+  // ---------------------------------------------------------- theme
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
+  function setTheme(t) { if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; store('entoli.theme', t || ''); }
+  setTheme(store('entoli.theme') || '');
+  function isDark() { var t = document.documentElement.dataset.theme; return t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; }
+  $('theme').onclick = function () { setTheme(isDark() ? 'light' : 'dark'); };
+
+  // ---------------------------------------------------------- studio tabs
+  function tab(name) {
+    document.querySelectorAll('.tab').forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.tab === name)); });
+    ['connect', 'map', 'know', 'skill', 'guide'].forEach(function (n) { $('p-' + n).hidden = n !== name; });
+    if (name === 'guide') renderGuide();
+    if (name === 'skill') renderSkill();
+  }
+  document.querySelectorAll('.tab').forEach(function (b) { b.onclick = function () { tab(b.dataset.tab); }; });
+
+  // ---------------------------------------------------------- sample app (the "analysis" result)
+  var APP = { name: 'Home', kind: 'screen', kids: [
+    { name: 'Notes', kind: 'screen', kids: [
+      { name: 'New note', kind: 'action', kids: [{ name: 'Title', kind: 'field' }, { name: 'Body', kind: 'field' }] },
+      { name: 'Search', kind: 'action', kids: [{ name: 'By tag', kind: 'filter' }, { name: 'By date', kind: 'filter' }] } ] },
+    { name: 'Settings', kind: 'screen', kids: [
+      { name: 'Account', kind: 'menu', kids: [{ name: 'Email', kind: 'setting' }, { name: 'Password', kind: 'setting' }] },
+      { name: 'Appearance', kind: 'menu', kids: [{ name: 'Theme', kind: 'setting' }, { name: 'Font size', kind: 'setting' }] } ] } ] };
+  var all = []; (function walk(n, path) { n.path = path.concat(n.name); all.push(n); (n.kids || []).forEach(function (k) { walk(k, n.path); }); })(APP, []);
+  var visited = {}, selected = [APP];
+  var analyzed = false;
+
+  function count(kind) { return all.filter(function (n) { return kind.indexOf(n.kind) >= 0; }).length; }
+  function analyze() {
+    tab('connect');
+    var repo = $('repo').value.trim() || 'github.com/acme/notes-app';
+    var lines = [
+      ['d', '› Connecting to ' + repo + ' (preview: sample repository)'],
+      ['ok', '✓ Read 214 files · React + TypeScript'],
+      ['d', '› Finding screens and routes…'],
+      ['ok', '✓ ' + count(['screen']) + ' screens: Home, Notes, Settings'],
+      ['d', '› Finding controls, actions and forms…'],
+      ['ok', '✓ ' + count(['action', 'field', 'filter', 'menu']) + ' controls, each linked to its handler'],
+      ['d', '› Finding settings and who may change them…'],
+      ['ok', '✓ ' + count(['setting']) + ' settings (Layer 2: changed by voice, with a yes)'],
+      ['d', '› Learning naming and style…'],
+      ['c', '◆ Map ready: ' + (all.length - 1) + ' paths. Next: walk it in the Map tab.']
+    ];
+    var log = $('log'); log.replaceChildren(); var i = 0;
+    (function next() {
+      if (i >= lines.length) { analyzed = true; numbers(); return; }
+      var s = el('span', lines[i][0], lines[i][1] + '\n'); log.appendChild(s); i++;
+      setTimeout(next, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 320);
+    })();
+  }
+  function numbers() {
+    $('f-screens').textContent = count(['screen']); $('f-controls').textContent = count(['action', 'field', 'filter', 'menu']);
+    $('f-settings').textContent = count(['setting']); $('f-paths').textContent = all.length - 1;
+  }
+  $('analyze').onclick = analyze;
+
+  // ---------------------------------------------------------- map (Miller columns)
+  function renderMap() {
+    var cols = $('cols'); cols.replaceChildren();
+    selected.forEach(function (n, depth) {
+      if (!n.kids) return;
+      var c = el('div', 'col'); c.appendChild(el('h4', '', n.name));
+      n.kids.forEach(function (k) {
+        var b = el('button', 'node' + (visited[k.path.join('/')] ? ' visited' : '')); b.type = 'button';
+        b.setAttribute('aria-pressed', String(selected[depth + 1] === k));
+        b.append(el('span', '', k.name), el('span', 'kind', k.kind));
+        b.onclick = function () { selected = selected.slice(0, depth + 1).concat(k); visit(k); renderMap(); };
+        c.appendChild(b);
+      });
+      cols.appendChild(c);
+    });
+    var last = selected[selected.length - 1];
+    $('path').textContent = last.path.join(' › ');
+    var pct = Math.round(Object.keys(visited).length / (all.length - 1) * 100);
+    $('cov').textContent = pct + '%'; $('covbar').style.width = pct + '%';
+  }
+  function visit(n) { if (n !== APP) visited[n.path.join('/')] = 1; }
+  function walkAll(done) {
+    tab('map'); visited = {}; var order = all.slice(1); var i = 0;
+    (function step() {
+      if (i >= order.length) { renderMap(); if (done) done(); return; }
+      var n = order[i++]; visit(n);
+      // select the chain down to this node so the walk is visible
+      var chain = [APP]; var cur = APP;
+      n.path.slice(1).forEach(function (name) { cur = (cur.kids || []).find(function (k) { return k.name === name; }); if (cur) chain.push(cur); });
+      selected = chain; renderMap();
+      setTimeout(step, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 160);
+    })();
+  }
+  $('walk').onclick = function () { walkAll(); };
+  $('resetmap').onclick = function () { visited = {}; selected = [APP]; renderMap(); };
+  renderMap();
+
+  // ---------------------------------------------------------- knowledge
+  var KNOW = { can: ['create notes', 'search notes', 'tag notes', 'change theme', 'change font size', 'change email'], cannot: ['share notes', 'export to PDF', 'delete account by voice'] };
+  function renderKnow() {
+    ['can', 'cannot'].forEach(function (k) {
+      var box = $(k); box.replaceChildren();
+      KNOW[k].forEach(function (item, i) {
+        var c = el('span', 'chip ' + k, item); var x = el('button', '', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Remove ' + item);
+        x.onclick = function () { KNOW[k].splice(i, 1); renderKnow(); }; c.appendChild(x); box.appendChild(c);
+      });
+    });
+  }
+  document.querySelectorAll('form.addrow').forEach(function (f) {
+    f.onsubmit = function (e) { e.preventDefault(); var inp = f.querySelector('input'); var v = inp.value.trim(); if (v) { KNOW[f.dataset.list].push(v); inp.value = ''; renderKnow(); } };
+  });
+  renderKnow();
+
+  // ---------------------------------------------------------- skill file
+  function renderSkill() {
+    var layer = Number($('layer-pick').value), mode = $('mode-pick').value;
+    function tree(n) { var o = { name: n.name, kind: n.kind }; if (n.kids) o.children = n.kids.map(tree); return o; }
+    var skill = {
+      entoli: '1.0', app: ($('repo').value.split('/').pop() || 'notes-app'), layer: layer, mode: mode,
+      map: tree(APP),
+      knowledge: { can: KNOW.can.slice(), cannot: KNOW.cannot.slice() },
+      acts: [
+        { name: 'create_note', phrases: ['new note', 'write a note'], slots: { title: 'freeText', body: 'freeText' }, radius: 'self' },
+        { name: 'search_notes', phrases: ['find', 'search'], slots: { tag: 'choice', date: 'when' }, radius: 'self' }
+      ].concat(layer === 2 ? [
+        { name: 'set_theme', phrases: ['dark mode', 'light mode'], slots: { theme: 'choice' }, radius: 'self', voiceOnly: true },
+        { name: 'change_email', phrases: ['change my email'], slots: { email: 'freeText' }, radius: 'external', voiceOnly: true, exact: true }
+      ] : []),
+      coverage: Math.round(Object.keys(visited).length / (all.length - 1) * 100) / 100
+    };
+    $('skill').textContent = JSON.stringify(skill, null, 2);
+  }
+  $('layer-pick').onchange = renderSkill; $('mode-pick').onchange = renderSkill;
+  $('copy').onclick = function () {
+    var t = $('skill').textContent;
+    try { navigator.clipboard.writeText(t).then(function () { $('copy').textContent = 'Copied'; }, sel); } catch (e) { sel(); }
+    function sel() { var r = document.createRange(); r.selectNodeContents($('skill')); var s = getSelection(); s.removeAllRanges(); s.addRange(r); $('copy').textContent = 'Selected, press copy'; }
+  };
+
+  // ---------------------------------------------------------- guided integration (the paid flow)
+  // One question at a time. Each answer narrows what gets built; the end is a
+  // plan of changes per feature, each approved on its own before it is written.
+  var QUESTIONS = [
+    { id: 'features', multi: true, q: 'Which features should Entoli be able to run?', why: 'Found in your code. Pick only what users should be able to ask for.',
+      opts: [['notes', 'Create notes', 'Notes › New note'], ['search', 'Search', 'Notes › Search'], ['appearance', 'Appearance', 'Settings › Appearance'], ['account', 'Account', 'Settings › Account']] },
+    { id: 'layer', q: 'How deep should it go?', why: 'Layer 2 reads the code behind each screen and can change settings by voice.',
+      opts: [['1', 'Layer 1 · Control', 'Runs the features you picked'], ['2', 'Layer 2 · Integrated', 'Also settings and access, by voice']] },
+    { id: 'mode', q: 'Text, voice, or both?', why: 'Text is cheaper and mostly runs on the device. Voice uses more AI per request.',
+      opts: [['text', 'Text', 'A command bar'], ['voice', 'Voice', 'Speak and hear back'], ['both', 'Both', 'Bar plus mic']] },
+    { id: 'design', q: 'Which design should the Entoli card use?', why: 'We found a theme in src/theme.ts: two fonts and six colour tokens.',
+      opts: [['yours', 'Use my design system', 'Reuse your tokens and fonts'], ['copy', 'Copy Entoli’s', 'Ink, paper and voice lime'], ['new', 'Make one for me', 'Generated from your logo and screens']] },
+    { id: 'who', q: 'Who may change settings through Entoli?', why: 'Only asked for Layer 2. Settings changes always need a spoken yes.', when: function (a) { return a.layer === '2'; },
+      opts: [['owner', 'Account owner only', ''], ['users', 'Any signed-in user, their own settings', '']] },
+    { id: 'confirm', q: 'When should it ask before acting?', why: 'Cheap actions on the user’s own data can run after a short pause they can stop.',
+      opts: [['risky', 'Only for things that reach others or can’t be undone', 'Recommended'], ['always', 'Always ask', 'Slower, safest']] }
+  ];
+  var answers = {}, qi = 0, applied = {};
+  function visibleQs() { return QUESTIONS.filter(function (q) { return !q.when || q.when(answers); }); }
+  function renderGuide() {
+    var box = $('interview'); box.replaceChildren(); var qs = visibleQs();
+    if (qi >= qs.length) { box.appendChild(el('div', 'q', 'Interview done. Here are your changes.')); summary(box); renderPlan(); return; }
+    var q = qs[qi];
+    box.append(el('div', 'qn', 'Question ' + (qi + 1) + ' of ' + qs.length), el('div', 'q', q.q), el('div', 'why', q.why));
+    var opts = el('div', 'opts'); var picked = q.multi ? (answers[q.id] || []) : answers[q.id];
+    q.opts.forEach(function (o) {
+      var b = el('button', 'opt'); b.type = 'button'; b.append(document.createTextNode(o[1])); if (o[2]) b.appendChild(el('small', '', o[2]));
+      b.setAttribute('aria-pressed', String(q.multi ? picked.indexOf(o[0]) >= 0 : picked === o[0]));
+      b.onclick = function () {
+        if (q.multi) { var a = answers[q.id] || []; var i = a.indexOf(o[0]); if (i >= 0) a.splice(i, 1); else a.push(o[0]); answers[q.id] = a; renderGuide(); }
+        else { answers[q.id] = o[0]; qi++; renderGuide(); }
+      };
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+    var nav = el('div', 'row');
+    if (qi > 0) { var back = el('button', 'btn small', 'Back'); back.type = 'button'; back.onclick = function () { qi--; renderGuide(); }; nav.appendChild(back); }
+    if (q.multi) { var next = el('button', 'btn small primary', 'Next'); next.type = 'button'; next.disabled = !(answers[q.id] || []).length; next.onclick = function () { qi++; renderGuide(); }; nav.appendChild(next); }
+    box.appendChild(nav); summary(box); $('plan').replaceChildren();
+  }
+  function summary(box) {
+    var a = el('div', 'answers');
+    Object.keys(answers).forEach(function (k) { var v = answers[k]; if (Array.isArray(v) ? v.length : v) a.appendChild(el('span', 'chip can', k + ': ' + (Array.isArray(v) ? v.join(', ') : v))); });
+    if (a.childNodes.length) box.appendChild(a);
+    if (qi > 0 || Object.keys(answers).length) { var r = el('button', 'btn small', 'Start over'); r.type = 'button'; r.onclick = function () { answers = {}; qi = 0; applied = {}; renderGuide(); }; box.appendChild(r); }
+  }
+  var CHANGES = {
+    notes: { title: 'Create notes', file: 'src/notes/NewNote.tsx', diff: ['- export function NewNote() {', '+ import { useEntoli } from \'@entoli/sdk\';', '+ export function NewNote() {', '+   useEntoli(\'create_note\', { title: \'freeText\', body: \'freeText\' }, save);'] },
+    search: { title: 'Search', file: 'src/notes/Search.tsx', diff: ['+ useEntoli(\'search_notes\', { tag: \'choice\', date: \'when\' }, runSearch);'] },
+    appearance: { title: 'Appearance', file: 'src/settings/Appearance.tsx', diff: ['+ useEntoli(\'set_theme\', { theme: \'choice\' }, setTheme, { voiceOnly: true });', '+ useEntoli(\'set_font_size\', { size: \'quantity\' }, setFontSize, { voiceOnly: true });'] },
+    account: { title: 'Account', file: 'src/settings/Account.tsx', diff: ['+ useEntoli(\'change_email\', { email: \'freeText\' }, changeEmail,', '+   { voiceOnly: true, exact: true, radius: \'external\' });'] }
+  };
+  function renderPlan() {
+    var box = $('plan'); box.replaceChildren();
+    var feats = (answers.features || []).filter(function (f) { return answers.layer === '2' || (f !== 'appearance' && f !== 'account'); });
+    var skipped = (answers.features || []).length - feats.length;
+    var base = { title: 'Set up Entoli', file: 'src/main.tsx', diff: ['+ import { mount } from \'@entoli/sdk\';', '+ import skill from \'./entoli.skill.json\';',
+      '+ mount({ el: \'#app\', skill, mode: \'' + answers.mode + '\', theme: \'' + (answers.design === 'yours' ? 'from:src/theme.ts' : answers.design === 'copy' ? 'entoli' : 'generated') + '\',',
+      '+   confirm: \'' + answers.confirm + '\'' + (answers.who ? ', settingsBy: \'' + answers.who + '\'' : '') + ' });'] };
+    [base].concat(feats.map(function (f) { return CHANGES[f]; })).forEach(function (c, i) {
+      var id = i ? feats[i - 1] : 'base';
+      var card = el('div', 'feat'); var top = el('div', 'top');
+      top.append(el('h3', '', (i ? 'Feature: ' : '') + c.title), el('span', 'st' + (applied[id] ? ' done' : ''), applied[id] ? 'Approved' : 'Waiting for you'));
+      var pre = el('pre', 'diff'); pre.appendChild(el('span', 'f', c.file + '\n'));
+      c.diff.forEach(function (l) { pre.appendChild(el('span', l[0] === '+' ? 'add' : l[0] === '-' ? 'del' : '', l + '\n')); });
+      var act = el('div', 'row');
+      if (!applied[id]) { var ok = el('button', 'btn small primary', 'Approve this change'); ok.type = 'button'; ok.onclick = function () { applied[id] = 1; renderPlan(); }; act.appendChild(ok); }
+      card.append(top, pre, act); box.appendChild(card);
+    });
+    if (skipped) box.appendChild(el('p', 'note', skipped + ' settings feature(s) left out: they need Layer 2.'));
+    var n = Object.keys(applied).length;
+    box.appendChild(el('p', 'note', n ? n + ' approved. At launch, approved changes open as one pull request on your repository.' : 'Approve each change you want. Nothing is written until you do.'));
+  }
+
+  // ---------------------------------------------------------- waitlist (local only in the preview)
+  $('wait').onsubmit = function (e) { e.preventDefault(); $('waitmsg').textContent = 'Thanks. In this preview nothing is sent; sign-ups open with the launch.'; };
+
+  // ---------------------------------------------------------- Ask Entoli: the page, operated by intent
+  // The same contract as in any Entoli app: one card, the user's words above it,
+  // cheap things that touch nobody happen after a short hold, anything that
+  // reaches outside waits for a yes, and there is always a way out.
+  function go(id) { var t = $(id); if (!t) return; t.scrollIntoView({ block: 'start' }); t.classList.add('flash'); setTimeout(function () { t.classList.remove('flash'); }, 1400); }
+  var ACTS = [
+    { re: /\b(layer|level)\s*(1|one)\b/, head: 'Show Layer 1: Control', rows: [['Go to', 'Layers · L1']], run: function () { go('layer-1'); } },
+    { re: /\b(layer|level)\s*(2|two)\b/, head: 'Show Layer 2: Integrated', rows: [['Go to', 'Layers · L2']], run: function () { go('layer-2'); } },
+    { re: /\b(layer|level)\s*(3|three)\b|kernel|linux/, head: 'Show Layer 3: System', rows: [['Go to', 'Layers · L3']], run: function () { go('layer-3'); } },
+    { re: /\b(connect|link)\b.*\b(github|repo|code)|analy[sz]e/, head: 'Connect and analyze the sample repository', rows: [['Repository', 'acme/notes-app'], ['Reads', '214 files']], explicit: 'This reaches your GitHub, so it waits for a yes.', run: function () { go('studio'); analyze(); } },
+    { re: /\b(walk|crawl|map|navigate)\b/, head: 'Walk every path in the app', rows: [['Paths', String(all.length - 1)]], run: function () { go('studio'); walkAll(); } },
+    { re: /\b(guided|interview|integrate my|questions?)\b/, head: 'Start the guided integration', rows: [['Tab', 'Guided integration']], run: function () { go('studio'); tab('guide'); } },
+    { re: /\b(skill|manifest|json)\b/, head: 'Open the generated skill', rows: [['File', 'entoli.skill.json']], run: function () { go('studio'); tab('skill'); } },
+    { re: /\b(knowledge|teach)\b/, head: 'Open the knowledge list', rows: [['Tab', 'Knowledge']], run: function () { go('studio'); tab('know'); } },
+    { re: /\b(price|pricing|cost|plans?)\b/, head: 'Show pricing', rows: [['Go to', 'Pricing']], run: function () { go('pricing'); } },
+    { re: /\b(integrate|sdk|mcp|install|docs?)\b/, head: 'Show how to integrate', rows: [['Go to', 'Integrate']], run: function () { go('integrate'); } },
+    { re: /\b(how|steps?|works?)\b/, head: 'Show how it works', rows: [['Go to', 'How it works']], run: function () { go('how'); } },
+    { re: /\b(dark)\b/, head: 'Switch to dark', rows: [['Theme', 'Dark']], run: function () { setTheme('dark'); } },
+    { re: /\b(light)\b/, head: 'Switch to light', rows: [['Theme', 'Light']], run: function () { setTheme('light'); } },
+    { re: /\b(join|wait ?list|sign ?up)\b/, head: 'Join the preview', rows: [['Go to', 'Pricing · sign-up']], run: function () { go('pricing'); $('email').focus(); } },
+    { re: /\b(top|home|start)\b/, head: 'Back to the top', rows: [['Go to', 'Top']], run: function () { window.scrollTo(0, 0); } }
+  ];
+  var holdTimer = 0, tick = 0;
+  function card(said, a) {
+    clearTimeout(holdTimer); clearInterval(tick);
+    var s = $('stage'); s.replaceChildren(); s.hidden = false;
+    s.appendChild(el('div', 'said', '“' + said + '”'));
+    s.appendChild(el('div', 'kick', a.kicker || 'Entoli'));
+    s.appendChild(el('div', 'headline', a.head));
+    if (a.rows && a.rows.length) { var rs = el('div', 'rows'); a.rows.forEach(function (r) { var x = el('div', 'r'); x.append(el('b', '', r[1]), el('span', '', r[0])); rs.appendChild(x); }); s.appendChild(rs); }
+    if (a.answer) { s.appendChild(el('p', '', a.answer)); }
+    var actsRow = el('div', 'acts');
+    var out = el('button', 'out', a.run ? 'Not that' : 'Close'); out.type = 'button';
+    out.onclick = function () { clearTimeout(holdTimer); clearInterval(tick); s.hidden = true; };
+    if (a.run && a.explicit) {
+      s.appendChild(el('div', 'why', a.explicit));
+      var yes = el('button', 'btn small primary', 'Do it'); yes.type = 'button';
+      yes.onclick = function () { s.hidden = true; a.run(); };
+      actsRow.append(yes, out);
+    } else if (a.run) {
+      var hold = el('div', 'hold'); var bar = el('i'); hold.appendChild(bar); s.appendChild(hold);
+      s.appendChild(el('div', '', '')).textContent = '';
+      var ms = 1600, t0 = Date.now();
+      tick = setInterval(function () { bar.style.width = Math.max(0, 100 - (Date.now() - t0) / ms * 100) + '%'; }, 50);
+      holdTimer = setTimeout(function () { clearInterval(tick); s.hidden = true; a.run(); }, ms);
+      var now = el('button', 'btn small', 'Now'); now.type = 'button';
+      now.onclick = function () { clearTimeout(holdTimer); clearInterval(tick); s.hidden = true; a.run(); };
+      actsRow.append(now, out);
+    } else { actsRow.append(out); }
+    s.appendChild(actsRow);
+  }
+  function ask(text) {
+    var t = text.toLowerCase().trim(); if (!t) return;
+    // Knowledge: answer from what the app was taught, never invent.
+    var q = /^(can|does|is|will|could)\b/.test(t) || /\?$/.test(t);
+    if (q) {
+      var match = function (list) { return list.find(function (k) { return k.split(/\s+/).some(function (w) { return w.length > 3 && t.indexOf(w) >= 0; }); }); };
+      var no = match(KNOW.cannot), yes = match(KNOW.can);
+      if (no) return card(text, { kicker: 'Knowledge', head: 'No, it can’t ' + no + '.', answer: 'That’s on the “can’t” list you taught it, so it says so instead of guessing.' });
+      if (yes) return card(text, { kicker: 'Knowledge', head: 'Yes, it can ' + yes + '.', answer: 'From the “can” list in the Studio’s Knowledge tab.' });
+    }
+    var a = ACTS.find(function (x) { return x.re.test(t); });
+    if (a) return card(text, a);
+    if (q) return card(text, { kicker: 'Knowledge', head: 'It wasn’t taught that.', answer: 'Add it to the Knowledge tab as something it can or can’t do, and it will answer next time.' });
+    card(text, { kicker: 'Entoli', head: 'I can’t do that on this page yet.', answer: 'Try: “show me layer two”, “connect github”, “walk the app”, “show pricing”, “dark mode”.' });
+  }
+  $('askf').onsubmit = function (e) { e.preventDefault(); var v = $('q').value; $('q').value = ''; ask(v); };
+  document.querySelectorAll('#suggest button').forEach(function (b) { b.onclick = function () { ask(b.textContent); }; });
+  document.querySelectorAll('[data-go="connect"]').forEach(function (a) { a.addEventListener('click', function (e) { e.preventDefault(); ask('connect github'); }); });
+
+  // Opens in a working state: the sample analysis already shown.
+  numbers();
+  $('log').replaceChildren(el('span', 'd', 'Sample repository ready. Press “Connect and analyze”, or ask the bar below.\n'));
+})();
+</script>
+
+</body>
+</html>
