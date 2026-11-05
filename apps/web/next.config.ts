@@ -12,6 +12,6 @@ const config: NextConfig = {
       { key: 'X-Frame-Options', value: 'DENY' },
     ] }];
   },
-  serverExternalPackages: ['@electric-sql/pglite', 'typescript', '@entoli/analyzer'],
+  serverExternalPackages: ['@electric-sql/pglite', 'typescript', '@entoli/analyzer', '@entoli/tester', 'playwright', 'playwright-core'],
 };
 export default config;

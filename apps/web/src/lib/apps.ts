@@ -67,8 +67,25 @@ export async function setRepo(db: DB, ownerId: string, appId: string, repo: stri
   await db.update(apps).set(set).where(and(eq(apps.id, appId), eq(apps.ownerId, ownerId)));
 }
 
+/**
+ * The tester opens this URL in a server-side browser, so it must not point
+ * inside our network. Production: https only, no IP literals for private,
+ * loopback or link-local ranges, no localhost.
+ */
+export function checkPreviewUrl(raw: string, production = process.env.NODE_ENV === 'production'): string | null {
+  let u: URL;
+  try { u = new URL(raw); } catch { return 'Not a URL.'; }
+  if (u.protocol !== 'https:' && !(u.protocol === 'http:' && !production)) return production ? 'Preview URL must use https.' : 'Preview URL must start with http:// or https://';
+  if (!production) return null;
+  const h = u.hostname.replace(/^\[|\]$/g, '').toLowerCase();
+  if (h === 'localhost' || h.endsWith('.localhost') || h.endsWith('.internal') || h.endsWith('.local')) return 'Preview URL must be publicly reachable.';
+  if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.|172\.(1[6-9]|2\d|3[01])\.)/.test(h) || /^(::1?|f[cd]|fe80)/.test(h) || /^\d+$/.test(h)) return 'Preview URL must be publicly reachable.';
+  return null;
+}
+
 export async function setPreviewUrl(db: DB, ownerId: string, appId: string, url: string | null) {
-  if (url && !/^https?:\/\//.test(url)) throw new Error('Preview URL must start with http:// or https://');
+  const problem = url ? checkPreviewUrl(url) : null;
+  if (problem) throw new Error(problem);
   await db.update(apps).set({ previewUrl: url }).where(and(eq(apps.id, appId), eq(apps.ownerId, ownerId)));
 }
 

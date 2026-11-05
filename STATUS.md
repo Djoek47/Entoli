@@ -137,5 +137,17 @@ ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 - The generated code depends on `@entoli/sdk` from npm: publish the package first.
 - Monorepos: the entry is chosen from the package that owns the first analyzed file.
 
+## M8 — Tester (`packages/tester`) — done
+
+**Real**
+- `walkMap(skill, url, browser)`: opens every screen with a concrete path (must answer < 400 with no uncaught page error), finds every mapped node by its selector on its screen (shared nodes on the first screen). Coverage = verified ÷ checkable; screens with route parameters and nodes without selectors are listed as "not checkable", not counted.
+- CLI `entoli-test <skill.json> <url> [--json] [--min 90] [--upload <dashboard> --key <ek_live_…>]`, exit code 2 on broken nodes or low coverage (CI gate).
+- Dashboard Test tab: preview URL (production: public https only, no private/loopback/link-local addresses), "Run the walk now" (local Chromium in dev, `BROWSER_WS_ENDPOINT` for a hosted browser in production), runs list with coverage, broken paths and reasons. `POST /api/test-runs` takes CI uploads with the app key (validated, rate-limited).
+- Tests: real Chromium against a static site with known present/missing/erroring/404 pages, and the Fieldnotes build against its own skill (100%, nothing broken); URL guard; report validation. Live: dashboard run on Fieldnotes → 100%, 10/10.
+
+**Needs**
+- On Vercel there is no local browser: set `BROWSER_WS_ENDPOINT` (e.g. a hosted Chromium service) or use the CI upload.
+- Pages behind a login are walked as an anonymous visitor.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

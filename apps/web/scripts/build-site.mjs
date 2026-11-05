@@ -22,6 +22,10 @@ const analyzer = join(root, 'packages', 'analyzer');
 if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(analyzer, 'dist', 'index.js'))) {
   execSync('pnpm run build', { cwd: analyzer, stdio: 'inherit' });
 }
+const tester = join(root, 'packages', 'tester');
+if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(tester, 'dist', 'index.js'))) {
+  execSync('pnpm run build', { cwd: tester, stdio: 'inherit' });
+}
 copyFileSync(join(sdk, 'dist', 'entoli.min.js'), join(pub, 'entoli.min.js'));
 copyFileSync(join(web, 'site', 'site.skill.json'), join(pub, 'site.skill.json'));
 copyFileSync(join(web, 'site', 'site-entoli.js'), join(pub, 'site-entoli.js'));

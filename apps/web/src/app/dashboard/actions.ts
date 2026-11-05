@@ -49,6 +49,17 @@ export async function setPreviewAction(appId: string, form: FormData) {
   revalidatePath(`/dashboard/apps/${appId}`);
 }
 
+export async function runTestAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { runFromDashboard } = await import('@/lib/test-runs');
+  try { await runFromDashboard(db, app); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/test?error=${q((e as Error).message)}`); }
+  revalidatePath(`/dashboard/apps/${appId}/test`);
+}
+
 export async function saveSkillAction(appId: string, form: FormData) {
   const user = await requireUser();
   const raw = String(form.get('skill') ?? '');
