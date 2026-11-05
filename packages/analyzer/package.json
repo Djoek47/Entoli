@@ -1,0 +1,26 @@
+{
+  "name": "@entoli/analyzer",
+  "version": "0.1.0",
+  "description": "entoli analyze <path>: walk a React/Next/Vue repository and draft entoli.skill.json.",
+  "type": "module",
+  "license": "UNLICENSED",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": { "entoli": "./bin/entoli.mjs" },
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "files": ["dist", "bin"],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.5.0",
+    "@entoli/sdk": "workspace:*",
+    "typescript": "^5.6.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "vitest": "^2.1.8"
+  }
+}

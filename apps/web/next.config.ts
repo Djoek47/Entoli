@@ -12,6 +12,6 @@ const config: NextConfig = {
       { key: 'X-Frame-Options', value: 'DENY' },
     ] }];
   },
-  serverExternalPackages: ['@electric-sql/pglite'],
+  serverExternalPackages: ['@electric-sql/pglite', 'typescript', '@entoli/analyzer'],
 };
 export default config;

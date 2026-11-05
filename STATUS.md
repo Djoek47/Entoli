@@ -70,5 +70,27 @@ pnpm --filter @entoli/web test
 ```
 Deploy: Vercel project with Root Directory `apps/web` (Next.js). Set `DATABASE_URL`, `AUTH_*`, `GITHUB_APP_*`, then `pnpm --filter @entoli/web db:migrate` once against the database.
 
+## M4 — Analyzer (`packages/analyzer` + `/api/analyze`) — done
+
+**Real**
+- `entoli analyze <path> [--out] [--print] [--no-ai] [--model] [--max-input-tokens]` (`packages/analyzer/bin/entoli.mjs`).
+- Static pass with TypeScript's parser (no execution of the repo's code): routes from React Router (`<Route>` and route objects), Next.js app and pages routers (per package in monorepos, route groups dropped, `[id]` → `:id`), Vue Router objects and Nuxt pages; buttons with their handlers (including `x.bind(...)` server actions and `navigate('/x')`), links, forms with typed fields, selects with options, toggles, settings (by place and by word); an import graph assigns each control to the screen that uses it.
+- Draft skill: one act per real handler; loose text inputs become slots of the create/submit button next to them; setters named after their field (`theme`, `fontSize`); `nav.open` over the screens; contract guesses (external/other-person/no-undo by words in the code), settings → `kind: setting`, voice only, layer L2. Always validated.
+- Claude pass (when `ANTHROPIC_API_KEY` is set): `claude-opus-5-5` (override with `ENTOLI_MODEL`), structured JSON output, server-side refusal fallback, summary capped by `ANALYSIS_MAX_INPUT_TOKENS` (default 60k, the cap is logged), output capped by `ANALYSIS_MAX_OUTPUT_TOKENS` (32k). It cannot add capability: acts must cite control ids from the scan or are dropped; radius/undo/exact/voice-only merge stricter-wins; choice options must exist in the code; the result must validate or the static draft is kept. Tokens and cost are logged per analysis.
+- Dashboard: Analyze tab (job runs after the response, page polls), `POST/GET /api/analyze`. Downloads one tarball (codeload for public repos, installation token for private), 80 MB cap, extracts only source files (no symlinks, no node_modules). Result saved as a draft; publishing stays a human step.
+- Tests: 15 analyzer (fixtures for React Router, Next app router, Vue, a monorepo, the real Fieldnotes app; merge rules; refusal/truncation; CLI) + 5 web (tarball extraction safety, job success/failure). Live check: this repository analyzed through the dashboard from GitHub (51 files, 9 Next routes, 19 acts).
+
+**Stubbed / not verified here**
+- The Claude pass is tested against a stubbed client only: no Anthropic key in this environment, and a live call costs money. First real run will show prompt quality.
+- Analysis runs inside the request's `after()` window (max 300 s on Vercel). Very large repos may need a queue later.
+- Monorepos are analyzed whole; a per-app subdirectory setting is a later addition.
+
+**Run**
+```bash
+pnpm --filter @entoli/analyzer build
+node packages/analyzer/bin/entoli.mjs analyze examples/notes-app --no-ai --print
+ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
+```
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

@@ -1,0 +1,1 @@
+{ "extends": "../../tsconfig.base.json", "compilerOptions": { "noEmit": true, "lib": ["ES2022"], "types": ["node"], "paths": { "@entoli/sdk/skill": ["../sdk/src/skill.ts"] } }, "include": ["src", "test"], "exclude": ["test/fixtures"] }

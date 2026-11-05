@@ -17,6 +17,11 @@ mkdirSync(pub, { recursive: true });
 if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(sdk, 'dist', 'entoli.min.js'))) {
   execSync('pnpm run build', { cwd: sdk, stdio: 'inherit' });
 }
+// The analyzer runs inside the API (M4); Next imports its built output.
+const analyzer = join(root, 'packages', 'analyzer');
+if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(analyzer, 'dist', 'index.js'))) {
+  execSync('pnpm run build', { cwd: analyzer, stdio: 'inherit' });
+}
 copyFileSync(join(sdk, 'dist', 'entoli.min.js'), join(pub, 'entoli.min.js'));
 copyFileSync(join(web, 'site', 'site.skill.json'), join(pub, 'site.skill.json'));
 copyFileSync(join(web, 'site', 'site-entoli.js'), join(pub, 'site-entoli.js'));

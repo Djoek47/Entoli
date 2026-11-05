@@ -16,13 +16,15 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",
+    "@entoli/analyzer": "workspace:*",
     "@entoli/sdk": "workspace:*",
     "@neondatabase/serverless": "^1.2.0",
     "drizzle-orm": "^0.45.4",
     "next": "^16.4.5",
     "next-auth": "5.0.0-beta.32",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "tar": "^7.5.22"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

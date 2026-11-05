@@ -109,3 +109,17 @@ export async function signOutAction() {
   await signOut({ redirectTo: '/' });
 }
 
+
+export async function startAnalysisAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { queueAnalysis, runAnalysis } = await import('@/lib/analysis');
+  const q = await queueAnalysis(db, app);
+  if ('error' in q) redirect(`/dashboard/apps/${appId}/analyze?error=${encodeURIComponent(q.error)}`);
+  const { after } = await import('next/server');
+  // Runs after the response is sent; the page polls the job row.
+  after(() => runAnalysis(db, app, q.id));
+  redirect(`/dashboard/apps/${appId}/analyze`);
+}
