@@ -106,5 +106,21 @@ ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 **Limits of v0.1**
 - With the browser's Web Speech API, voice metering of device-resolved turns relies on the SDK reporting them; it becomes enforceable once speech runs through a server-side provider.
 
+## M6 — Billing (Stripe) — done (needs your Stripe account to go live)
+
+**Real**
+- Billing tab per app: plan cards (Developer $0 / L1 $49 / L2 $299), Stripe Checkout for upgrades, customer portal (invoices, card, cancellation), managed setup request ($2,500 one-time Checkout that opens a request listed in the dashboard).
+- One Stripe customer per app (meters aggregate per customer, so two apps never bill against each other).
+- Plans change only from verified webhooks (`/api/stripe/webhook`: `checkout.session.completed`, `customer.subscription.created|updated|deleted`); a lapsed or cancelled subscription drops the app to Developer.
+- Metered billing with Stripe Billing Meters: hourly cron (`/api/cron/usage`, `vercel.json`) reports voice turns and text overage as deltas since the last report, with idempotent event identifiers; reported counters stored per app per month.
+- `scripts/stripe-setup.mjs` creates (idempotently) the two meters, five products and six prices with lookup keys: no price ids in env vars.
+- Limits enforced in `/api/intent`: Developer plan hard stop at 1,000 text intents and only one free app per account; voice only on L1/L2; paid plans warned past 80%, overage billed at $2 / 1,000.
+- Dev mode without Stripe: a plan switcher on the Billing tab to try the limits.
+- Tests: 7 (Checkout parameters, signed webhooks verified with Stripe's own test signatures, plan transitions, managed request paid, usage deltas and idempotency, one free app). Live: the Fieldnotes build calls the local `/api/intent` cross-origin with a real key (OPTIONS 204, POST 200).
+
+**Notes**
+- Included intents count by calendar month (UTC); Stripe invoices on the subscription's anniversary. Overage is reported as it happens, so it lands on whichever invoice is open.
+- Nothing has been charged or created in a real Stripe account from here.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

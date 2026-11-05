@@ -12,6 +12,7 @@ import { askJson, AiError, hasAnthropicKey, type Usage } from '@entoli/analyzer'
 import type { Skill, SkillAct, SlotType } from '@entoli/sdk/skill';
 import type { DB } from '@/db';
 import { appByKey, getUsage, meter, skillOf } from './apps';
+import { freeAppAllowed } from './billing';
 import { PLANS, SOFT_LIMIT_SHARE } from './plans';
 import { hit } from './ratelimit';
 
@@ -135,6 +136,7 @@ export async function handleIntent(db: DB, input: { key: string | null; origin: 
   if (channel !== 'text' && channel !== 'voice') return { status: 400, body: { error: 'channel must be "text" or "voice"' } };
 
   const plan = PLANS[app.plan];
+  if (!(await freeAppAllowed(db, app))) return { status: 402, body: { error: 'The Developer plan covers one app. Upgrade this app to L1 or L2 in the dashboard.', plan: plan.id } };
   const usage = await getUsage(db, app.id);
   if (channel === 'voice' && !plan.voicePerTurn) return { status: 402, body: { error: 'Voice needs the L1 or L2 plan.', plan: plan.id } };
   if (channel === 'text' && plan.hardLimit && usage.textIntents >= plan.includedText) {

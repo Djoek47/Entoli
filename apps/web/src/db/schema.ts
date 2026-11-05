@@ -24,6 +24,8 @@ export const apps = pgTable('apps', {
   repo: text('repo'),
   installationId: text('installation_id'),
   plan: text('plan').$type<PlanId>().notNull().default('developer'),
+  /** One Stripe customer per app: meters aggregate per customer, so apps never share usage. */
+  stripeCustomerId: text('stripe_customer_id'),
   stripeSubscriptionId: text('stripe_subscription_id'),
   subscriptionStatus: text('subscription_status'),
   skill: jsonb('skill'),

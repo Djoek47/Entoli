@@ -137,3 +137,64 @@ export async function setOriginsAction(appId: string, form: FormData) {
   await db.update(apps).set({ allowedOrigins: [...new Set(raw)].slice(0, 20) }).where(eq(apps.id, appId));
   revalidatePath(`/dashboard/apps/${appId}/keys`);
 }
+
+async function origin(): Promise<string> {
+  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '');
+  const { headers } = await import('next/headers');
+  const h = await headers();
+  return `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('x-forwarded-host') ?? h.get('host')}`;
+}
+
+export async function checkoutAction(appId: string, plan: 'l1' | 'l2') {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { createCheckout, getStripe } = await import('@/lib/billing');
+  const stripe = getStripe();
+  if (!stripe) redirect(`/dashboard/apps/${appId}/billing?error=${q('Billing is not configured on this deployment.')}`);
+  let url: string;
+  try { url = await createCheckout(db, stripe, { app, user, plan, origin: await origin() }); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/billing?error=${q((e as Error).message)}`); }
+  redirect(url);
+}
+
+export async function portalAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { createPortal, getStripe } = await import('@/lib/billing');
+  const stripe = getStripe();
+  if (!stripe) redirect(`/dashboard/apps/${appId}/billing?error=${q('Billing is not configured on this deployment.')}`);
+  let url: string;
+  try { url = await createPortal(stripe, app, await origin()); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/billing?error=${q((e as Error).message)}`); }
+  redirect(url);
+}
+
+export async function managedAction(appId: string, form: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { createManagedCheckout, getStripe } = await import('@/lib/billing');
+  const stripe = getStripe();
+  if (!stripe) redirect(`/dashboard/apps/${appId}/billing?error=${q('Billing is not configured on this deployment.')}`);
+  let url: string;
+  try { url = await createManagedCheckout(db, stripe, { user, appId, notes: String(form.get('notes') ?? ''), origin: await origin() }); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/billing?error=${q((e as Error).message)}`); }
+  redirect(url);
+}
+
+/** Local development only: switch plans without Stripe to try the limits. */
+export async function devPlanAction(appId: string, plan: 'developer' | 'l1' | 'l2') {
+  if (process.env.NODE_ENV === 'production' || process.env.STRIPE_SECRET_KEY) redirect(`/dashboard/apps/${appId}/billing`);
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { setPlan } = await import('@/lib/apps');
+  await setPlan(db, appId, plan, { id: null, status: plan === 'developer' ? null : 'active' });
+  revalidatePath(`/dashboard/apps/${appId}`);
+}
