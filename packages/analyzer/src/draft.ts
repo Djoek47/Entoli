@@ -10,7 +10,8 @@ import { validateSkill, type KnowledgeEntry, type MapKind, type MapNode, type Ra
 import { humanize, type Control, type ScanResult } from './scan.js';
 
 export type Guess = { act: string; radius: Radius; undo: boolean; why: string };
-export type Draft = { skill: Skill; guesses: Guess[]; notes: string[] };
+export type ActSource = { file: string; line: number; component?: string; handler?: string };
+export type Draft = { skill: Skill; guesses: Guess[]; notes: string[]; sources: Record<string, ActSource[]> };
 
 const EXTERNAL = /\b(pay|payment|purchase|checkout|buy|order|publish|deploy|billing|subscribe|subscription|transfer|withdraw|webhook|api key|password|email|phone|sign ?out|log ?out|delete account|close account)\b/;
 const OTHER = /\b(send|share|invite|assign|message|mention|notify|post|comment|reply|forward|email to)\b/;
@@ -89,6 +90,11 @@ export function draftSkill(scan: ScanResult): Draft {
   if (hasShared) map.push({ id: 'shared', kind: 'menu', title: 'Everywhere (shared UI)' });
 
   const usedIds = new Set(map.map((m) => m.id));
+  const sources: Record<string, ActSource[]> = {};
+  const addSource = (name: string, c: Control) => {
+    const src: ActSource = { file: c.file, line: c.line, ...(c.component ? { component: c.component } : {}), ...(c.handler ? { handler: c.handler } : {}) };
+    (sources[name] ??= []).push(src);
+  };
   let settingsFound = 0;
 
   // Plain text/number/date inputs are not acts on their own: typing is not
@@ -143,6 +149,7 @@ export function draftSkill(scan: ScanResult): Draft {
           guesses.push({ act: name, radius: g.radius, undo: g.undo, why: g.why });
         }
         node.act = name;
+        addSource(name, c);
       }
     }
     map.push(node);
@@ -168,5 +175,5 @@ export function draftSkill(scan: ScanResult): Draft {
   const skill: Skill = { entoli: '0.1', app: { name: scan.appName }, layer, mode: 'text', map, knowledge, acts: actList };
   const v = validateSkill(skill);
   if (!v.ok) notes.push(...v.errors.map((e) => `draft problem: ${e}`));
-  return { skill, guesses, notes };
+  return { skill, guesses, notes, sources };
 }

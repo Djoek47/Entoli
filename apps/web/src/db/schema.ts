@@ -75,6 +75,8 @@ export const analyses = pgTable('analyses', {
   costMicros: integer('cost_micros').notNull().default(0),
   usedModel: boolean('used_model').notNull().default(false),
   log: jsonb('log').$type<string[]>().notNull().default([]),
+  /** Where each act lives in the code: { actName: [{ file, line, component, handler }] }. */
+  sources: jsonb('sources').$type<Record<string, { file: string; line: number; component?: string; handler?: string }[]>>(),
   error: text('error'),
   createdAt: created(),
   finishedAt: timestamp('finished_at', { withTimezone: true }),
@@ -90,14 +92,20 @@ export const managedRequests = pgTable('managed_requests', {
   createdAt: created(),
 });
 
-export type IntegrationChange = { id: string; title: string; file: string; diff: string; content: string; status: 'pending' | 'approved' | 'rejected' };
+export type IntegrationChange = {
+  id: string; title: string; file: string; diff: string; content: string;
+  status: 'pending' | 'approved' | 'rejected';
+  /** Git blob id of the file as read (null for new files): the PR refuses files that changed since. */
+  baseSha?: string | null;
+  summary?: string;
+};
 
 export const integrations = pgTable('integrations', {
   id: id(),
   appId: text('app_id').notNull().references(() => apps.id, { onDelete: 'cascade' }),
   answers: jsonb('answers').$type<Record<string, unknown>>().notNull().default({}),
   changes: jsonb('changes').$type<IntegrationChange[]>().notNull().default([]),
-  status: text('status').$type<'interview' | 'generated' | 'pr_opened' | 'failed'>().notNull().default('interview'),
+  status: text('status').$type<'interview' | 'generating' | 'generated' | 'pr_opened' | 'failed'>().notNull().default('interview'),
   prUrl: text('pr_url'),
   error: text('error'),
   createdAt: created(),

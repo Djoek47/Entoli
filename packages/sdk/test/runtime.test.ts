@@ -240,3 +240,18 @@ describe('runtime: voice metering and server errors', () => {
     expect(s.message).toMatch(/Monthly limit/);
   });
 });
+
+describe('runtime: confirm "always"', () => {
+  it('turns the silent hold into an explicit yes, and nothing looser', async () => {
+    const timers = new FakeTimers();
+    const e = new Entoli({ skill, timers, confirm: 'always' });
+    const fn = vi.fn();
+    e.register('note.create', {}, fn, { undo: () => {} });
+    e.register('settings.email', {}, vi.fn());
+    const s = await e.hear('new note call the bank');
+    expect(s).toMatchObject({ phase: 'confirm', why: 'This app asks before every action.' });
+    await timers.advance(5000);
+    expect(fn).not.toHaveBeenCalled();
+    expect((await e.hear('change my email to a@b.co', { channel: 'voice' })).phase).toBe('exact');
+  });
+});

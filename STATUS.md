@@ -122,5 +122,20 @@ ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 - Included intents count by calendar month (UTC); Stripe invoices on the subscription's anniversary. Overage is reported as it happens, so it lands on whichever invoice is open.
 - Nothing has been charged or created in a real Stripe account from here.
 
+## M7 — Guided integration (paid) — done (PR step needs the GitHub App)
+
+**Real**
+- Guided integration tab, L1/L2 plans only. Interview: features to expose (from the skill), layer, text or voice, design (Entoli's / inherit the app's / generated from the app's CSS variables), who may change settings (anyone / admins / nobody), confirmation (contract / always ask).
+- Changes prepared per file and shown as unified diffs: `entoli.skill.json` (only the chosen features; settings dropped on L1 or "nobody"), `@entoli/sdk` dependency, a bootstrap (`src/entoli.ts` for Vite/React, `components/EntoliBar.tsx` for Next.js), the entry import, an optional theme file — all deterministic. Wiring `useEntoli` into existing components is done by Claude, one call per file, using the act locations recorded by the analysis; the result must parse and must actually wire something, or it is not offered.
+- Each change is approved, rejected or reset on its own. "Open pull request" commits only approved changes as one commit on `entoli/integration-…` and opens one PR, with a write-scoped installation token requested at that moment. A file that changed on the default branch since it was read is refused, not overwritten.
+- SDK: `mount({ confirm: 'always' })` makes every act wait for a yes.
+- Tests: 11 (interview parsing, settings policy, paid gate, theme, dependency edit, generation against the real Fieldnotes source, broken model edits refused, no-model path, PR contents, drift refusal, missing write permission). Browser: interview → changes → approve → PR correctly refused without an installation.
+
+**Needs / limits**
+- Wiring edits need `ANTHROPIC_API_KEY`; without it only the setup changes are prepared (the notes say so). Not run against a live model here.
+- The PR needs the GitHub App with contents + pull requests **write** permissions (the developer approves them when asked).
+- The generated code depends on `@entoli/sdk` from npm: publish the package first.
+- Monorepos: the entry is chosen from the package that owns the first analyzed file.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

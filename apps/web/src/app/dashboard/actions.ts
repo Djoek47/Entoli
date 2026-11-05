@@ -198,3 +198,60 @@ export async function devPlanAction(appId: string, plan: 'developer' | 'l1' | 'l
   await setPlan(db, appId, plan, { id: null, status: plan === 'developer' ? null : 'active' });
   revalidatePath(`/dashboard/apps/${appId}`);
 }
+
+export async function startIntegrationAction(appId: string, form: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { integrationAllowed, parseAnswers, startIntegration, generateIntegration, dirFiles } = await import('@/lib/integration');
+  const blocked = integrationAllowed(app);
+  if (blocked) redirect(`/dashboard/apps/${appId}/integrate?error=${q(blocked)}`);
+  const skill = skillOf(app);
+  if (!skill) redirect(`/dashboard/apps/${appId}/integrate?error=${q('Analyze the repository first.')}`);
+  const answers = parseAnswers({ ...Object.fromEntries(form.entries()), features: form.getAll('features') }, skill);
+  if ('error' in answers) redirect(`/dashboard/apps/${appId}/integrate?error=${q(answers.error)}`);
+  const row = await startIntegration(db, app, answers);
+  const { after } = await import('next/server');
+  const { fetchRepo } = await import('@/lib/repo-fetch');
+  after(async () => {
+    let fetched: Awaited<ReturnType<typeof fetchRepo>> | null = null;
+    try {
+      fetched = await fetchRepo(app.repo!, { installationId: app.installationId });
+      await generateIntegration(db, app, row.id, { files: dirFiles(fetched.dir) });
+    } catch (e) {
+      const { integrations } = await import('@/db/schema');
+      const { eq } = await import('drizzle-orm');
+      await db.update(integrations).set({ status: 'failed', error: (e as Error).message }).where(eq(integrations.id, row.id));
+    } finally {
+      await fetched?.cleanup().catch(() => {});
+    }
+  });
+  redirect(`/dashboard/apps/${appId}/integrate`);
+}
+
+export async function changeStatusAction(appId: string, integrationId: string, changeId: string, status: 'approved' | 'rejected' | 'pending') {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { setChangeStatus } = await import('@/lib/integration');
+  const { integrations } = await import('@/db/schema');
+  const { and, eq } = await import('drizzle-orm');
+  const [owned] = await db.select({ id: integrations.id }).from(integrations).where(and(eq(integrations.id, integrationId), eq(integrations.appId, appId)));
+  if (!owned) redirect(`/dashboard/apps/${appId}/integrate`);
+  await setChangeStatus(db, integrationId, changeId, status);
+  revalidatePath(`/dashboard/apps/${appId}/integrate`);
+}
+
+export async function openPrAction(appId: string, integrationId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { openPullRequest } = await import('@/lib/integration');
+  let url: string;
+  try { url = await openPullRequest(db, app, integrationId); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/integrate?error=${q((e as Error).message)}`); }
+  redirect(`/dashboard/apps/${appId}/integrate?pr=${encodeURIComponent(url)}`);
+}

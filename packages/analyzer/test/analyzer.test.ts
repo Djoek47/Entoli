@@ -85,6 +85,7 @@ describe('draft', () => {
     expect(d.skill.layer).toBe('L2');
     expect(d.skill.map.find((n) => n.act === 'deleteNote')!.selector).toBe('[data-testid="delete"]');
     expect(by['nav.open']!.slots!.screen!.options).toEqual([{ value: '/', label: 'Notes' }, { value: '/settings', label: 'Settings' }]);
+    expect(d.sources.deleteNote).toEqual([expect.objectContaining({ file: 'src/pages/Notes.tsx', component: 'NotesPage', handler: 'deleteNote' })]);
   });
 
   it('turns loose text inputs into slots of the create button next to them', () => {
@@ -181,6 +182,7 @@ describe('Claude pass', () => {
     expect(m.skill.map.find((n) => n.act === 'note.create')).toBeTruthy();
     expect(m.skill.map.find((n) => n.id === 'home')!.title).toBe('My notes');
     expect(m.skill.knowledge).toEqual([{ topic: 'export to PDF', can: false, answer: "No, it can't export to PDF." }]);
+    expect(m.sources['note.create']).toEqual([expect.objectContaining({ file: 'src/pages/Notes.tsx', handler: 'handleCreateNote' })]);
   });
 
   it('caps the summary sent to the model', () => {

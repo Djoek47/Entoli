@@ -59,7 +59,7 @@ export async function runAnalysis(db: DB, app: AppRow, analysisId: string, sourc
     log.push('Saved as a draft. Review the map, the acts and their contract, then publish.');
     console.info(`[analysis] app=${app.id} files=${r.scan.files} model=${r.usedModel ? r.model : 'none'} in=${r.usage.tokensIn} out=${r.usage.tokensOut} cost_usd=${(r.costMicros / 1e6).toFixed(4)}`);
     await flush({
-      status: 'done', filesScanned: r.scan.files, usedModel: r.usedModel,
+      status: 'done', filesScanned: r.scan.files, usedModel: r.usedModel, sources: r.sources,
       tokensIn: r.usage.tokensIn, tokensOut: r.usage.tokensOut, costMicros: r.costMicros, finishedAt: new Date(),
     });
   } catch (e) {

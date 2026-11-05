@@ -84,7 +84,7 @@ const RANK: Record<Radius, number> = { self: 0, 'other-person': 1, external: 2 }
 const NAME = /^[a-z][a-zA-Z0-9_.-]*$/;
 const SLOT = /^[a-zA-Z][a-zA-Z0-9_]*$/;
 
-export type RefineResult = { skill: Skill; usage: Usage; costMicros: number; model: string; dropped: string[]; notes: string[]; omitted: number };
+export type RefineResult = { skill: Skill; usage: Usage; costMicros: number; model: string; dropped: string[]; notes: string[]; omitted: number; sources: Draft['sources'] };
 
 export async function refineWithClaude(scan: ScanResult, draft: Draft, opts: { maxInputTokens?: number; maxOutputTokens?: number; model?: string; client?: Anthropic } = {}): Promise<RefineResult> {
   const { text, omitted } = summarize(scan, draft, opts.maxInputTokens ?? 60_000);
@@ -100,11 +100,11 @@ export async function refineWithClaude(scan: ScanResult, draft: Draft, opts: { m
   const merged = mergeRefinement(scan, draft, r.data);
   const v = validateSkill(merged.skill);
   if (!v.ok) throw new AiError(`The refined skill did not validate: ${v.errors.slice(0, 3).join('; ')}`, 'invalid_json', r.usage, r.model);
-  return { skill: v.skill, usage: r.usage, costMicros: r.costMicros, model: r.model, dropped: merged.dropped, notes: [...r.data.notes, ...merged.notes], omitted };
+  return { skill: v.skill, usage: r.usage, costMicros: r.costMicros, model: r.model, dropped: merged.dropped, notes: [...r.data.notes, ...merged.notes], omitted, sources: merged.sources };
 }
 
 /** Pure merge, exported for tests. */
-export function mergeRefinement(scan: ScanResult, draft: Draft, ai: AiOut): { skill: Skill; dropped: string[]; notes: string[] } {
+export function mergeRefinement(scan: ScanResult, draft: Draft, ai: AiOut): { skill: Skill; dropped: string[]; notes: string[]; sources: Draft['sources'] } {
   const dropped: string[] = [];
   const notes: string[] = [];
   const controls = new Map(scan.controls.map((c) => [c.id, c]));
@@ -120,6 +120,7 @@ export function mergeRefinement(scan: ScanResult, draft: Draft, ai: AiOut): { sk
   }
 
   const acts = new Map<string, SkillAct>();
+  const actSources: Draft['sources'] = {};
   const renamed = new Map<string, string>(); // map node id -> act name
   for (const a of ai.acts) {
     const sources = a.source_controls.filter((id) => controls.has(id));
@@ -157,11 +158,13 @@ export function mergeRefinement(scan: ScanResult, draft: Draft, ai: AiOut): { sk
     const screen = statics.find((s) => s.screen)?.screen;
     if (screen) act.screen = screen;
     acts.set(act.name, act);
+    actSources[act.name] = sources.map((id) => { const c = controls.get(id)!; return { file: c.file, line: c.line, ...(c.component ? { component: c.component } : {}), ...(c.handler ? { handler: c.handler } : {}) }; });
     for (const id of sources) { const nid = nodeByControl.get(id); if (nid) renamed.set(nid, act.name); }
   }
   // Navigation is structural; it survives whatever the model does.
   const nav = draft.skill.acts.find((a) => a.name === 'nav.open');
   if (nav && !acts.has('nav.open')) acts.set('nav.open', nav);
+  if (draft.sources['nav.open'] && !actSources['nav.open']) actSources['nav.open'] = draft.sources['nav.open'];
 
   const titles = new Map(ai.screens.filter((s) => s.title).map((s) => [s.id, s.title]));
   const map = draft.skill.map.map((n) => {
@@ -187,5 +190,5 @@ export function mergeRefinement(scan: ScanResult, draft: Draft, ai: AiOut): { sk
   const anySetting = [...acts.values()].some((a) => a.kind === 'setting');
   if (anySetting && draft.skill.layer === 'L1') notes.push('Settings acts found; layer set to L2.');
   const skill: Skill = { ...draft.skill, layer: anySetting ? 'L2' : draft.skill.layer, map, acts: [...acts.values()], knowledge };
-  return { skill, dropped, notes };
+  return { skill, dropped, notes, sources: actSources };
 }

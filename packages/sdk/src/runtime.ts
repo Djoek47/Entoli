@@ -116,6 +116,11 @@ export type EntoliOptions = {
   voiceMeter?: VoiceMeter;
   timers?: Timers;
   fetch?: typeof fetch;
+  /**
+   * 'contract' (default): self + undo runs after the 1.6 s hold.
+   * 'always': every act waits for an explicit yes. Can only make things stricter.
+   */
+  confirm?: 'contract' | 'always';
 };
 
 type Registered = {
@@ -176,6 +181,7 @@ function humanize(name: string): string {
 export class Entoli {
   readonly skill: Skill;
   readonly mode: Mode;
+  private readonly confirmMode: 'contract' | 'always';
   private readonly key?: string;
   private readonly remote?: RemoteResolver;
   private readonly voiceMeter?: VoiceMeter;
@@ -194,6 +200,7 @@ export class Entoli {
   constructor(opts: EntoliOptions) {
     this.skill = opts.skill;
     this.mode = opts.mode ?? opts.skill.mode;
+    this.confirmMode = opts.confirm ?? 'contract';
     if (opts.key !== undefined) this.key = opts.key;
     this.timers = opts.timers ?? realTimers;
     if (opts.resolver) this.remote = opts.resolver;
@@ -506,10 +513,11 @@ export class Entoli {
       base.args = this.args(p);
     }
 
-    const plan: CommitPlan = planCommit(
+    let plan: CommitPlan = planCommit(
       { radius: reg.radius, undo: !!reg.undoFn, voiceOnly: reg.voiceOnly, exact: reg.exact, kind: reg.kind, fromModel: p.via === 'model' },
       channel,
     );
+    if (plan.assent === 'hold' && this.confirmMode === 'always') plan = { assent: 'yes', why: 'This app asks before every action.' };
     if (plan.assent === 'blocked') {
       this.pending = null;
       this.set({ ...base, phase: 'blocked', message: plan.why, why: plan.why });
