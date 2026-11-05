@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "resolveJsonModule": true, "paths": { "@entoli/sdk": ["../../packages/sdk/src/index.ts"], "@entoli/sdk/react": ["../../packages/sdk/src/react.ts"] } },
+  "include": ["src", "test", "vite.config.ts"]
+}

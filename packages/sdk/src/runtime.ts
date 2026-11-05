@@ -37,6 +37,12 @@ export type ActOptions = {
   phrases?: string[];
   /** One line for the receipt. Defaults to the title and arguments. */
   describe?: (slots: Record<string, unknown>) => string;
+  /**
+   * Normalise and check the slots BEFORE the card is drawn, so the card shows
+   * exactly what will run. Return new slots, or a string to refuse (shown to
+   * the person; nothing runs).
+   */
+  prepare?: (slots: Record<string, unknown>) => Record<string, unknown> | string;
 };
 
 export type Arg = { name: string; label: string; value: unknown; display: string };
@@ -121,6 +127,7 @@ type Registered = {
   declared: boolean;
   handler: ActHandler;
   describe?: ActOptions['describe'];
+  prepare?: ActOptions['prepare'];
 };
 
 type Pending = {
@@ -239,6 +246,7 @@ export class Entoli {
     };
     if (opts.undo && declared?.undo !== false) reg.undoFn = opts.undo;
     if (opts.describe) reg.describe = opts.describe;
+    if (opts.prepare) reg.prepare = opts.prepare;
     if (reg.phrases.length === 0) reg.phrases.push(humanize(name).toLowerCase());
     this.acts.set(name, reg);
     return () => {
@@ -473,6 +481,20 @@ export class Entoli {
         this.set({ ...base, phase: 'ask', ask: { slot: name, prompt: s.prompt ?? `${s.label ?? humanize(name)}?`, ...(opts ? { options: opts } : {}) } });
         return this._state;
       }
+    }
+
+    if (reg.prepare) {
+      let out: Record<string, unknown> | string;
+      try { out = reg.prepare({ ...p.values }); } catch (e) { out = (e as Error).message; }
+      if (typeof out === 'string') {
+        this.pending = null;
+        this.set({ ...base, phase: 'error', message: out });
+        return this._state;
+      }
+      for (const [k, v] of Object.entries(out)) {
+        if (p.values[k] !== v) { p.values[k] = v; p.labels[k] = display(v); }
+      }
+      base.args = this.args(p);
     }
 
     const plan: CommitPlan = planCommit(

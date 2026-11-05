@@ -1,0 +1,82 @@
+{
+  "$schema": "https://entoli.dev/schema/skill-0.1.json",
+  "entoli": "0.1",
+  "app": { "name": "Fieldnotes", "id": "fieldnotes", "repo": "Djoek47/entoli/examples/notes-app" },
+  "layer": "L2",
+  "mode": "voice",
+  "map": [
+    { "id": "notes", "kind": "screen", "title": "Notes", "path": "/", "selector": "[data-screen=notes]" },
+    { "id": "notes.new", "kind": "button", "title": "New note", "parent": "notes", "selector": "[data-testid=new-note]", "act": "note.create" },
+    { "id": "notes.search", "kind": "form", "title": "Search notes", "parent": "notes", "selector": "[data-testid=search]", "act": "note.search" },
+    { "id": "notes.tag", "kind": "menu", "title": "Tag a note", "parent": "notes", "selector": "[data-testid=tag-menu]", "act": "note.tag" },
+    { "id": "notes.delete", "kind": "button", "title": "Delete note", "parent": "notes", "selector": "[data-testid=delete-note]", "act": "note.delete" },
+    { "id": "settings", "kind": "screen", "title": "Settings", "path": "/settings", "selector": "[data-screen=settings]" },
+    { "id": "settings.theme", "kind": "setting", "title": "Theme", "parent": "settings", "selector": "[data-testid=theme]", "act": "settings.theme" },
+    { "id": "settings.fontSize", "kind": "setting", "title": "Font size", "parent": "settings", "selector": "[data-testid=font-size]", "act": "settings.fontSize" },
+    { "id": "settings.email", "kind": "setting", "title": "Email", "parent": "settings", "selector": "[data-testid=email]", "act": "settings.email" },
+    { "id": "nav", "kind": "menu", "title": "Navigation", "selector": "nav", "act": "nav.open" }
+  ],
+  "knowledge": [
+    { "topic": "export to PDF", "can": false, "answer": "No. Fieldnotes can't export to PDF yet.", "phrases": ["print notes", "download notes"] },
+    { "topic": "sync across devices", "can": false, "answer": "No. Notes stay in this browser; there is no sync.", "phrases": ["sync", "cloud backup", "other devices"] },
+    { "topic": "share notes", "can": false, "answer": "No. Notes are private to you; there is no sharing." },
+    { "topic": "tags", "can": true, "answer": "Yes. Say \"tag it work\" to tag the selected note: work, personal, ideas or urgent.", "phrases": ["tag notes", "labels", "categories"] },
+    { "topic": "search notes", "can": true, "answer": "Yes. Say \"search for milk\"." },
+    { "topic": "dark mode", "can": true, "answer": "Yes. Say \"switch to dark mode\"; it asks for a yes first.", "phrases": ["theme", "night mode"] },
+    { "topic": "work offline", "can": true, "answer": "Yes. Everything runs in your browser.", "phrases": ["offline", "without internet"] },
+    { "topic": "undo", "can": true, "answer": "Yes. Every note, tag and delete has an Undo in the receipts below the bar.", "phrases": ["take back", "revert"] },
+    { "topic": "change email", "can": true, "answer": "Yes, by voice only. You'll see exactly the new address and confirm it.", "phrases": ["email address"] }
+  ],
+  "acts": [
+    {
+      "name": "note.create", "title": "New note", "screen": "notes",
+      "phrases": ["new note", "add a note", "add note", "note that", "write down", "remember"],
+      "radius": "self", "undo": true,
+      "slots": { "text": { "type": "freeText", "required": true, "label": "Note", "prompt": "What should the note say?" } }
+    },
+    {
+      "name": "note.search", "title": "Search notes", "screen": "notes",
+      "phrases": ["search", "search for", "find", "look for", "show notes about"],
+      "radius": "self", "undo": true,
+      "slots": { "query": { "type": "freeText", "required": true, "label": "Search", "prompt": "Search for what?" } }
+    },
+    {
+      "name": "note.tag", "title": "Tag note", "screen": "notes",
+      "phrases": ["tag", "tag it", "tag this", "label it", "mark as"],
+      "radius": "self", "undo": true,
+      "slots": { "tag": { "type": "choice", "required": true, "label": "Tag", "prompt": "Which tag?",
+        "options": ["work", "personal", "ideas", { "value": "urgent", "aliases": ["important"] }] } }
+    },
+    {
+      "name": "note.delete", "title": "Delete note", "screen": "notes",
+      "phrases": ["delete note", "delete this note", "remove note", "delete it", "trash it"],
+      "radius": "self", "undo": true,
+      "slots": { "note": { "type": "choice", "label": "Note", "prompt": "Which note?" } }
+    },
+    {
+      "name": "nav.open", "title": "Go to", "screen": "nav",
+      "phrases": ["go to", "open", "show"],
+      "radius": "self", "undo": true,
+      "slots": { "screen": { "type": "choice", "required": true, "label": "Screen", "options": [{ "value": "notes", "aliases": ["my notes", "home"] }, { "value": "settings", "aliases": ["preferences"] }] } }
+    },
+    {
+      "name": "settings.theme", "title": "Change theme", "kind": "setting", "screen": "settings",
+      "phrases": ["theme", "switch to", "change theme"],
+      "radius": "self", "undo": true,
+      "slots": { "theme": { "type": "choice", "required": true, "label": "Theme", "prompt": "Light or dark?",
+        "options": [{ "value": "light", "aliases": ["light mode", "day"] }, { "value": "dark", "aliases": ["dark mode", "night", "night mode"] }] } }
+    },
+    {
+      "name": "settings.fontSize", "title": "Change font size", "kind": "setting", "screen": "settings",
+      "phrases": ["font size", "text size", "set font size"],
+      "radius": "self", "undo": true,
+      "slots": { "size": { "type": "quantity", "required": true, "label": "Size (px)", "prompt": "What size, from 12 to 24?" } }
+    },
+    {
+      "name": "settings.email", "title": "Change email", "kind": "setting", "screen": "settings",
+      "phrases": ["change my email", "change email", "update my email", "email address", "new email"],
+      "radius": "external", "exact": true, "voiceOnly": true,
+      "slots": { "email": { "type": "freeText", "required": true, "label": "New email", "prompt": "What is the new address?" } }
+    }
+  ]
+}

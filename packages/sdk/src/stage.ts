@@ -34,7 +34,7 @@ font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--e-ink);font-size:1
 .entoli-btn.go{background:var(--e-lime);border-color:var(--e-ink)}
 .entoli-btn.ghost{border-color:transparent;background:transparent;text-decoration:underline}
 .entoli-mic{width:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
-.entoli-said{margin:12px 2px 6px;color:var(--e-muted);font-size:14px}
+.entoli-said{display:inline-block;margin:12px 0 6px;padding:4px 12px;background:var(--e-paper);border:1px solid var(--e-line);border-radius:999px;color:var(--e-muted);font-size:14px}
 .entoli-said q{color:var(--e-ink);font-style:normal}
 .entoli-card{background:var(--e-paper);border:1.5px solid var(--e-ink);border-radius:16px;padding:16px;position:relative;overflow:hidden}
 .entoli-kicker{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-muted)}
@@ -51,7 +51,9 @@ font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--e-ink);font-size:1
 .entoli-hold.run{transition-property:width;transition-timing-function:linear;width:100%}
 .entoli-card.exact{border-width:2px;box-shadow:4px 4px 0 var(--e-ink)}
 .entoli-card.blocked,.entoli-card.error{border-color:var(--e-warn)}
-.entoli-receipts{list-style:none;margin:12px 0 0;padding:0;font-size:13px}
+.entoli-receipts{list-style:none;margin:12px 0 0;padding:0;font-size:13px;color:var(--e-ink)}
+.entoli-receipts:not(:empty){background:var(--e-paper);border:1px solid var(--e-line);border-radius:12px;padding:0 10px}
+.entoli-receipts li:first-child{border-top:0}
 .entoli-receipts li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 2px;border-top:1px dashed var(--e-line)}
 .entoli-receipts li.undone{color:var(--e-muted);text-decoration:line-through}
 .entoli-receipts .entoli-btn{min-height:32px;padding:4px 10px;font-size:13px}
@@ -111,7 +113,8 @@ export function renderStage(entoli: Entoli, el: HTMLElement, opts: StageOptions 
   const root = h(doc, 'div', { class: 'entoli', 'data-entoli': '' });
   const input = h(doc, 'input', { class: 'entoli-input', type: 'text', 'aria-label': 'Ask this app', placeholder: opts.placeholder ?? (voice ? 'Say or type what you want' : 'Type what you want'), autocomplete: 'off', enterkeyhint: 'go' });
   const mark = h(doc, 'span', { class: 'entoli-mark', 'aria-hidden': 'true' }, '>', h(doc, 'span', { class: 'entoli-wave' }, h(doc, 'i'), h(doc, 'i'), h(doc, 'i')));
-  const mic = voice ? h(doc, 'button', { class: 'entoli-btn entoli-mic', type: 'button', 'aria-label': 'Speak' }, '🎙') : null;
+  const mic = voice ? h(doc, 'button', { class: 'entoli-btn entoli-mic', type: 'button', 'aria-label': 'Speak' }) : null;
+  if (mic) mic.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
   const go = h(doc, 'button', { class: 'entoli-btn primary', type: 'submit' }, 'Go');
   const form = h(doc, 'form', { class: 'entoli-bar', role: 'search' }, mark, input, mic, go);
   const stage = h(doc, 'div', { class: 'entoli-stage', 'aria-live': 'polite' });

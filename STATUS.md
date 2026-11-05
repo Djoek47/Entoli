@@ -27,5 +27,26 @@ pnpm --filter @entoli/sdk test
 pnpm --filter @entoli/sdk build
 ```
 
+## M2 — `examples/notes-app` (Fieldnotes demo) — done
+
+**Real**
+- Vite + React app: Notes (new, search, tag, delete) and Settings (theme, font size, email), persisted in localStorage, with ordinary buttons too.
+- Every act in `examples/notes-app/entoli.skill.json` is wired with `useEntoli` to the app's real functions, with undo where the app can take it back.
+- Contract in action: new note / search / tag / delete / navigate hold 1.6 s with "Not that"; theme and font size are settings and wait for a yes; font size is range-checked before the card; email is external + exact + voice only: typed is refused, spoken shows exactly the normalised address ("ana at example dot com" → `ana@example.com`) and the yes is bound to that card.
+- Knowledge questions answered from the skill only ("can it export to PDF?" → no).
+- 8 end-to-end tests (real App + real SDK in jsdom); checked in Chromium (desktop + 390 px), no console errors.
+- SDK addition: `prepare` option on acts, so a card always shows what will run.
+
+**Stubbed / later**
+- Model fallback is off unless `VITE_ENTOLI_KEY` (and optionally `VITE_ENTOLI_ENDPOINT`) is set; needs M5.
+- Voice uses the browser's Web Speech API (Chrome/Edge/Safari); Firefox gets text only.
+
+**Run / deploy**
+```bash
+pnpm --filter @entoli/example-notes dev
+pnpm --filter @entoli/example-notes test
+```
+Vercel: new project, Root Directory `examples/notes-app`, framework Vite (its `vercel.json` sets the rest). The SDK is compiled from source via a Vite alias, so no separate build step.
+
 ## Marketing site
 The original static page is in `site/` unchanged. On Vercel, until `apps/web` exists, set the project's Root Directory to `site` (Framework: Other, no build).

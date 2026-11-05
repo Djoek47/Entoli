@@ -196,3 +196,24 @@ describe('runtime: model fallback', () => {
     expect(s.message).toMatch(/offline/);
   });
 });
+
+describe('runtime: prepare', () => {
+  it('normalises before the card, so the exact card shows what runs', async () => {
+    const timers = new FakeTimers();
+    const e = new Entoli({ skill, timers });
+    const fn = vi.fn();
+    e.register('settings.email', {}, fn, {
+      prepare: (s) => {
+        const v = String(s.email).replace(/\s+at\s+/g, '@').replace(/\s+dot\s+/g, '.').replace(/\s+/g, '').toLowerCase();
+        return /^[^@]+@[^@]+\.[a-z]+$/.test(v) ? { email: v } : `"${v}" is not an email address.`;
+      },
+    });
+    const s = await e.hear('change my email to Ana at example dot com', { channel: 'voice' });
+    expect(s.args?.[0]?.display).toBe('ana@example.com');
+    await e.confirm(s.fingerprint);
+    expect(fn).toHaveBeenCalledWith({ email: 'ana@example.com' }, expect.anything());
+    const bad = await e.hear('change my email to nobody', { channel: 'voice' });
+    expect(bad.phase).toBe('error');
+    expect(bad.message).toMatch(/not an email/);
+  });
+});
