@@ -92,5 +92,19 @@ node packages/analyzer/bin/entoli.mjs analyze examples/notes-app --no-ai --print
 ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 ```
 
+## M5 — Runtime API (`/api/intent`) — done
+
+**Real**
+- `POST /api/intent` with `Authorization: Bearer ek_live_…` (CORS enabled; the key is a public client key). Body: what the SDK already sends (`phrase`, `channel`, the wired `acts` with their slot types and runtime options).
+- The model only chooses: candidates are acts in the app's **published** skill **and** wired in the calling client; the act name and slot names are `enum`s in the structured-output schema and checked again on return; option slots must match an option; anything else becomes `{ act: null }`. Claude `claude-opus-5-5`, effort low, refusal fallback on. The SDK then applies the commit contract (a model's choice always waits for a yes).
+- Metering per app per calendar month (UTC): one text intent per text call, one voice turn per voice call, plus model calls, tokens and cost. Device-resolved voice turns are reported by the SDK (`local`) and metered without a model call.
+- Limits before any model call: Developer plan stops at 1,000 text intents (402, on-device matching keeps working); voice needs L1/L2 (402); paid plans get an `x-entoli-warning` header past 80% and overage is billed (M6). Per-key rate limit (default 120/min, `INTENT_RATE_PER_MIN`, Postgres-backed so it holds across instances). Optional allowed origins per app (Keys tab), including `*.vercel.app` wildcards.
+- No model configured: answers `{ act: null, reason: 'model unavailable' }` and does not meter.
+- SDK: shows the server's error text; reports voice turns resolved on the device.
+- Tests: 10 for the handler (keys, origins, publish gate, choose-only, invented acts, runtime options, metering, plan limits, rate limit).
+
+**Limits of v0.1**
+- With the browser's Web Speech API, voice metering of device-resolved turns relies on the SDK reporting them; it becomes enforceable once speech runs through a server-side provider.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

@@ -1,8 +1,8 @@
 export { mount, defineAct, getEntoli, onEntoli, type MountOptions, type Mounted } from './mount.js';
 export {
-  Entoli, httpResolver, HOLD_MS,
+  Entoli, httpResolver, httpVoiceMeter, HOLD_MS,
   type ActHandler, type ActOptions, type Arg, type EntoliOptions, type Phase, type Receipt, type RemoteChoice,
-  type RemoteRequest, type RemoteResolver, type RuntimeSlot, type SlotsSpec, type StageState, type Timers,
+  type RemoteRequest, type RemoteResolver, type RuntimeSlot, type SlotsSpec, type StageState, type Timers, type VoiceMeter,
 } from './runtime.js';
 export { planCommit, fingerprint, canonical, type Channel, type CommitPlan, type ContractInput } from './contract.js';
 export {

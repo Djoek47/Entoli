@@ -88,6 +88,8 @@ export type RemoteRequest = {
 };
 export type RemoteChoice = { act: string | null; slots?: Record<string, unknown> } | null;
 export type RemoteResolver = (req: RemoteRequest) => Promise<RemoteChoice>;
+/** Reports a voice turn that was resolved on the device (metering only). */
+export type VoiceMeter = (req: { phrase: string; channel: 'voice'; local: { act: string } }) => Promise<void>;
 
 export type Timers = {
   now(): number;
@@ -110,6 +112,8 @@ export type EntoliOptions = {
   mode?: Mode;
   /** Replace the network fallback (tests, self-hosting). */
   resolver?: RemoteResolver;
+  /** Replace the voice-turn meter (tests, self-hosting). */
+  voiceMeter?: VoiceMeter;
   timers?: Timers;
   fetch?: typeof fetch;
 };
@@ -174,6 +178,7 @@ export class Entoli {
   readonly mode: Mode;
   private readonly key?: string;
   private readonly remote?: RemoteResolver;
+  private readonly voiceMeter?: VoiceMeter;
   private readonly timers: Timers;
   private readonly acts = new Map<string, Registered>();
   private readonly listeners = new Set<(s: StageState) => void>();
@@ -193,6 +198,8 @@ export class Entoli {
     this.timers = opts.timers ?? realTimers;
     if (opts.resolver) this.remote = opts.resolver;
     else if (opts.key) this.remote = httpResolver(opts.endpoint ?? 'https://entoli.dev', opts.key, opts.fetch);
+    if (opts.voiceMeter) this.voiceMeter = opts.voiceMeter;
+    else if (opts.key) this.voiceMeter = httpVoiceMeter(opts.endpoint ?? 'https://entoli.dev', opts.key, opts.fetch);
   }
 
   get state(): StageState {
@@ -355,6 +362,8 @@ export class Entoli {
 
     if (decision.kind === 'start') {
       const def = defs.find((d) => d.name === decision.act)!;
+      // Voice turns are metered even when the device understood them.
+      if (channel === 'voice') void this.voiceMeter?.({ phrase: said, channel: 'voice', local: { act: decision.act } }).catch(() => {});
       return this.begin(this.acts.get(decision.act)!, this.fillLocal(said, def, ctx), said, channel, 'device');
     }
     if (decision.kind === 'narrow') {
@@ -613,10 +622,30 @@ export function httpResolver(endpoint: string, key: string, f: typeof fetch = gl
       headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
       body: JSON.stringify(req),
     });
-    if (res.status === 402 || res.status === 429) throw new Error('intent limit reached for this app');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const msg = await res.json().then((b: { error?: string }) => b.error).catch(() => undefined);
+      throw new Error(msg ?? `HTTP ${res.status}`);
+    }
     const body = (await res.json()) as RemoteChoice;
     return body;
+  };
+}
+
+let warnedVoice = false;
+export function httpVoiceMeter(endpoint: string, key: string, f: typeof fetch = globalThis.fetch?.bind(globalThis)): VoiceMeter {
+  return async (req) => {
+    if (!f) return;
+    const res = await f(`${endpoint.replace(/\/$/, '')}/api/intent`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
+      body: JSON.stringify(req),
+      keepalive: true,
+    });
+    if (!res.ok && !warnedVoice) {
+      warnedVoice = true;
+      const msg = await res.json().then((b: { error?: string }) => b.error).catch(() => `HTTP ${res.status}`);
+      console.warn(`[entoli] voice turn not metered: ${msg}`);
+    }
   };
 }
 

@@ -123,3 +123,17 @@ export async function startAnalysisAction(appId: string) {
   after(() => runAnalysis(db, app, q.id));
   redirect(`/dashboard/apps/${appId}/analyze`);
 }
+
+export async function setOriginsAction(appId: string, form: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const raw = String(form.get('origins') ?? '').split(/[\s,]+/).map((x) => x.trim().replace(/\/$/, '')).filter(Boolean);
+  const bad = raw.filter((o) => !/^(https?:\/\/[a-z0-9.-]+(:\d+)?|\*\.[a-z0-9.-]+)$/i.test(o));
+  if (bad.length) redirect(`/dashboard/apps/${appId}/keys?error=${encodeURIComponent(`Not an origin: ${bad.join(', ')}`)}`);
+  const { apps } = await import('@/db/schema');
+  const { eq } = await import('drizzle-orm');
+  await db.update(apps).set({ allowedOrigins: [...new Set(raw)].slice(0, 20) }).where(eq(apps.id, appId));
+  revalidatePath(`/dashboard/apps/${appId}/keys`);
+}

@@ -217,3 +217,26 @@ describe('runtime: prepare', () => {
     expect(bad.message).toMatch(/not an email/);
   });
 });
+
+describe('runtime: voice metering and server errors', () => {
+  it('reports device-resolved voice turns, not typed ones', async () => {
+    const timers = new FakeTimers();
+    const voiceMeter = vi.fn(async () => {});
+    const e = new Entoli({ skill, timers, voiceMeter });
+    e.register('note.create', {}, vi.fn(), { undo: () => {} });
+    await e.hear('new note milk', { channel: 'voice' });
+    await e.hear('new note eggs');
+    expect(voiceMeter).toHaveBeenCalledTimes(1);
+    expect(voiceMeter).toHaveBeenCalledWith({ phrase: 'new note milk', channel: 'voice', local: { act: 'note.create' } });
+  });
+
+  it('shows the server\'s own error message', async () => {
+    const f = vi.fn(async () => new Response(JSON.stringify({ error: 'Monthly limit of 1,000 intents reached.' }), { status: 402 }));
+    const e = new Entoli({ skill, key: 'ek_live_x', endpoint: 'https://api.test', fetch: f as unknown as typeof fetch, timers: new FakeTimers() });
+    e.register('note.create', {}, vi.fn(), { undo: () => {} });
+    const s = await e.hear('something entirely different');
+    expect(f).toHaveBeenCalledWith('https://api.test/api/intent', expect.objectContaining({ method: 'POST' }));
+    expect(s.phase).toBe('error');
+    expect(s.message).toMatch(/Monthly limit/);
+  });
+});

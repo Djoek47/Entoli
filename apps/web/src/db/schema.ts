@@ -29,6 +29,8 @@ export const apps = pgTable('apps', {
   skill: jsonb('skill'),
   skillStatus: text('skill_status').$type<'none' | 'draft' | 'published'>().notNull().default('none'),
   previewUrl: text('preview_url'),
+  /** Origins allowed to use this app's key from a browser. Empty: any origin. */
+  allowedOrigins: jsonb('allowed_origins').$type<string[]>().notNull().default([]),
   createdAt: created(),
 }, (t) => [index('apps_owner').on(t.ownerId)]);
 
