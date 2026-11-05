@@ -18,6 +18,7 @@ export type SlotType = (typeof SLOT_TYPES)[number];
 export const RADII = ['self', 'other-person', 'external'] as const;
 export type Radius = (typeof RADII)[number];
 
+/** L1: the device answers, no AI (the menu responds). L2: Entoli's AI answers, then the change goes on the card. */
 export const LAYERS = ['L1', 'L2'] as const;
 export type Layer = (typeof LAYERS)[number];
 
@@ -54,11 +55,24 @@ export type SkillAct = {
   voiceOnly?: boolean;
   /** Show every argument and bind the yes to exactly what was shown. */
   exact?: boolean;
-  /** 'setting' acts change how the app behaves (Layer 2) and always need a yes. */
+  /** 'setting' acts change how the app behaves; they always need a yes. */
   kind?: 'feature' | 'setting';
   /** The map node this act lives on. */
   screen?: string;
+  /**
+   * This act's layer, overriding the app's: 'L2' the AI may answer and pick it,
+   * 'L1' only the device can (no AI ever sees it), 'off' declared but not
+   * connected (never matched; for things that must stay manual).
+   */
+  layer?: ActLayer;
 };
+
+export type ActLayer = 'L1' | 'L2' | 'off';
+
+/** The layer an act actually runs at: its own, else the app's. */
+export function actLayer(skill: Pick<Skill, 'layer'>, act: Pick<SkillAct, 'layer'>): ActLayer {
+  return act.layer ?? skill.layer;
+}
 
 export type MapNode = {
   id: string;
@@ -169,7 +183,7 @@ export function validateSkill(input: unknown): ValidationResult {
         if (a[f] !== undefined && typeof a[f] !== 'boolean') err(`${p}.${f}`, 'must be boolean');
       }
       if (a.kind !== undefined && a.kind !== 'feature' && a.kind !== 'setting') err(`${p}.kind`, 'must be "feature" or "setting"');
-      if (a.kind === 'setting' && s.layer !== 'L2') err(`${p}.kind`, 'setting acts need layer "L2"');
+      if (a.layer !== undefined && a.layer !== 'L1' && a.layer !== 'L2' && a.layer !== 'off') err(`${p}.layer`, 'must be "L1", "L2" or "off"');
       if (typeof a.screen === 'string' && Array.isArray(s.map) && !nodeIds.has(a.screen)) err(`${p}.screen`, `unknown map node "${a.screen}"`);
       if (a.radius === 'self' && a.undo !== true) warnings.push(`${p}: radius "self" without undo always needs a yes`);
       if (a.slots !== undefined) {
@@ -253,7 +267,7 @@ export const skillJsonSchema = {
           name: { type: 'string' }, title: { type: 'string' }, description: { type: 'string' },
           phrases: { type: 'array', minItems: 1, items: { type: 'string' } },
           radius: { enum: [...RADII] }, undo: { type: 'boolean' }, voiceOnly: { type: 'boolean' }, exact: { type: 'boolean' },
-          kind: { enum: ['feature', 'setting'] }, screen: { type: 'string' },
+          kind: { enum: ['feature', 'setting'] }, screen: { type: 'string' }, layer: { enum: ['L1', 'L2', 'off'] },
           slots: {
             type: 'object',
             additionalProperties: {

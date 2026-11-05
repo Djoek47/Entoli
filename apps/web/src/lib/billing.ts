@@ -21,7 +21,6 @@ import { PLANS, period } from './plans';
 export const LOOKUP = {
   l1: 'entoli_l1_monthly',
   l2: 'entoli_l2_monthly',
-  voiceL1: 'entoli_voice_l1',
   voiceL2: 'entoli_voice_l2',
   overage: 'entoli_text_overage',
   managed: 'entoli_managed_setup',
@@ -67,14 +66,16 @@ export async function ensureCustomer(db: DB, stripe: StripeLike, app: AppRow, us
 export async function createCheckout(db: DB, stripe: StripeLike, input: { app: AppRow; user: UserRow; plan: 'l1' | 'l2'; origin: string }): Promise<string> {
   const ids = await priceIds(stripe);
   const customer = await ensureCustomer(db, stripe, input.app, input.user);
-  const flat = ids.get(input.plan === 'l1' ? LOOKUP.l1 : LOOKUP.l2)!;
-  const voice = ids.get(input.plan === 'l1' ? LOOKUP.voiceL1 : LOOKUP.voiceL2)!;
+  // L1 is the skill: one flat price. L2 adds the metered AI (voice turns, intents over the plan).
+  const line_items = input.plan === 'l1'
+    ? [{ price: ids.get(LOOKUP.l1)!, quantity: 1 }]
+    : [{ price: ids.get(LOOKUP.l2)!, quantity: 1 }, { price: ids.get(LOOKUP.voiceL2)! }, { price: ids.get(LOOKUP.overage)! }];
   const back = `${input.origin}/dashboard/apps/${input.app.id}/billing`;
   const s = await stripe.checkout.sessions.create({
     mode: 'subscription',
     customer,
     client_reference_id: input.app.id,
-    line_items: [{ price: flat, quantity: 1 }, { price: voice }, { price: ids.get(LOOKUP.overage)! }],
+    line_items,
     subscription_data: { metadata: { appId: input.app.id, plan: input.plan } },
     metadata: { appId: input.app.id, plan: input.plan, kind: 'plan' },
     success_url: `${back}?checkout=success`,
@@ -171,7 +172,9 @@ export function verifyEvent(stripe: StripeLike, raw: string, signature: string |
  */
 export async function reportUsage(db: DB, stripe: StripeLike, now = new Date()): Promise<{ app: string; voice: number; overage: number }[]> {
   const p = period(now);
-  const rows = await db.select().from(apps).where(and(ne(apps.plan, 'developer'), isNotNull(apps.stripeCustomerId), inArray(apps.subscriptionStatus, [...PAID_STATUSES])));
+  // Only plans with metered AI have anything to report.
+  const metered = (Object.keys(PLANS) as PlanId[]).filter((p) => PLANS[p].ai);
+  const rows = await db.select().from(apps).where(and(inArray(apps.plan, metered), ne(apps.plan, 'developer'), isNotNull(apps.stripeCustomerId), inArray(apps.subscriptionStatus, [...PAID_STATUSES])));
   const out: { app: string; voice: number; overage: number }[] = [];
   const { usage } = await import('@/db/schema');
   for (const app of rows) {

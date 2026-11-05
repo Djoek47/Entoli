@@ -166,8 +166,9 @@ export function draftSkill(scan: ScanResult): Draft {
   }
 
   const actList = [...acts.values()];
-  const layer = settingsFound > 0 ? 'L2' : 'L1';
-  if (settingsFound) notes.push(`${settingsFound} setting act(s) found: the draft uses Layer 2 (settings by voice only, with a yes). Remove them to stay on Layer 1.`);
+  // Layer 1 (no AI) by default; the developer chooses Layer 2 when they want the AI to answer.
+  const layer = 'L1' as const;
+  if (settingsFound) notes.push(`${settingsFound} setting act(s) found: settings are voice only and always need a yes.`);
   if (scan.truncated) notes.push('The repository has more files than the scan limit; some controls were not read.');
 
   const knowledge: KnowledgeEntry[] = actList.map((a) => ({ topic: (a.title ?? a.name).toLowerCase(), can: true, answer: `Yes. Say "${a.phrases[0]}".` }));

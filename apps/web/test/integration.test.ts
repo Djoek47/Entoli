@@ -45,7 +45,8 @@ describe('interview', () => {
 
   it('is a paid feature', async () => {
     const { app } = await setup('developer');
-    expect(integrationAllowed(app)).toMatch(/L1 and L2/);
+    expect(integrationAllowed(app)).toMatch(/L2 plan/);
+    expect(integrationAllowed({ ...app, plan: 'l1' })).toMatch(/coding agent/);
   });
 
   it('adds the SDK dependency, keeping the file\'s indentation', () => {

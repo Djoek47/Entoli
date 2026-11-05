@@ -160,5 +160,18 @@ ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 - `README.md`: what Entoli is, 3-step integration, repository layout, local run, deploy.
 - Production build clean (no warnings); 107 tests across 5 packages.
 
+## Product model update — layers per feature, two plans, the voice tool — done
+
+**What changed (from the owner's brief)**
+- **Layer 1** = no AI: typed or spoken (transcribed) requests are matched on the device and the menu responds. **Layer 2** = Entoli's AI answers (spoken back in voice mode), then the change goes on the card under the same contract. The layer is chosen **per act**: `"layer": "L1" | "L2" | "off"` in the skill (overrides the app's), set in the Map tab or by voice. The AI is only ever offered L2 acts; L1 acts it never sees; `off` acts are never matched. Settings are no longer tied to a layer (they always need a yes).
+- **Plans**: Developer $0 (1 app, L1, text). **L1 $49 = the skill**: analyzer, map, SDK, tester, voice input as transcription, export to coding agents, bring your own AI (`resolver`). No Entoli AI, nothing metered, one flat Stripe price. **L2 $299 = skill + integration**: Entoli AI at runtime (100,000 intents, $0.015 per AI voice turn, $2 per 1,000 over), the voice tool (300 turns a month, `VOICE_TOOL_TURNS`), and the integration pull request.
+- **Voice tool**: every app page in the dashboard has an Entoli bar running on the dashboard's own skill (go to a tab, analyze, prepare the integration with answers, approve/reject/approve all, set a feature's layer, publish, open the pull request). L2 apps: Layer 2, AI via `/api/studio/intent`, metered against the quota. Other plans: the same bar as Layer 1 (device only).
+- **Skill export for coding agents** (L1 and L2): Skill tab downloads a Claude Code skill (`.claude/skills/entoli/SKILL.md`), a Cursor rule or an AGENTS.md section, carrying the skill, where each act lives in the code, and how to wire it.
+- SDK: `layer` option; L2 asks the AI for every new request with the device's match as a hint; if the AI agrees with the device the small reversible act still runs after the hold, otherwise it waits for a yes; replies shown above the card and spoken; yes/no stay on the device; AI unreachable → device fallback. L1 never calls Entoli with an app key; `resolver` = bring your own AI. Voice-turn beacon removed (AI turns are metered on the server).
+- Marketing page, pricing page, docs and README updated to the new model.
+- Tests: SDK 45, web 55. Live: the dashboard driven by its own bar (navigate with hold and Undo, approve all, exact "Open the pull request" card).
+
+**Not verified here**: the AI replies (no model key in this environment; the L2 path ran on its device fallback, and the AI path is covered by tests with a stand-in model).
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

@@ -270,3 +270,24 @@ export async function openPrAction(appId: string, integrationId: string) {
   catch (e) { redirect(`/dashboard/apps/${appId}/integrate?error=${q((e as Error).message)}`); }
   redirect(`/dashboard/apps/${appId}/integrate?pr=${encodeURIComponent(url)}`);
 }
+
+export async function setActLayerAction(appId: string, act: string, form: FormData) {
+  const layer = String(form.get('layer') ?? '');
+  if (layer !== 'L1' && layer !== 'L2' && layer !== 'off') return;
+  await editSkill(appId, (s) => {
+    const a = s.acts.find((x) => x.name === act);
+    if (!a) return;
+    if (layer === s.layer) delete a.layer; else a.layer = layer;
+  }, `/dashboard/apps/${appId}/map`);
+}
+
+/** For the voice tool: publish the current skill. Returns a message instead of redirecting. */
+export async function publishSkillAction(appId: string): Promise<{ ok: boolean; message: string }> {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) return { ok: false, message: 'App not found.' };
+  const r = await saveSkill(db, user.id, appId, app.skill, 'published');
+  revalidatePath(`/dashboard/apps/${appId}`);
+  return r.ok ? { ok: true, message: 'Published.' } : { ok: false, message: r.errors.join(' ') };
+}

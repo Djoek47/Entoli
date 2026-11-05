@@ -79,3 +79,19 @@ describe('mount + Stage', () => {
     expect(() => mount({ skill: { entoli: '0.1' } })).toThrow(/Invalid entoli.skill.json/);
   });
 });
+
+describe('Layer 2 in the Stage', () => {
+  it('shows the AI reply above the card and speaks it in voice mode', async () => {
+    document.body.innerHTML = '<div id="e"></div>';
+    off.push(defineAct('settings.theme', {}, vi.fn(), { undo: () => {} }));
+    const speak = vi.fn();
+    const speech: SpeechProvider = { name: 'fake', supported: true, listen: async () => 'make it look like midnight', stop() {}, speak };
+    const m = mount({ el: '#e', skill, mode: 'voice', layer: 'L2', speech, fonts: false, resolver: async () => ({ act: 'settings.theme', slots: { theme: 'dark' }, say: 'Switching to dark. Say yes to confirm.' }) });
+    off.push(m.unmount);
+    await m.stage!.listen();
+    await flush();
+    expect(document.querySelector('.entoli-reply')!.textContent).toBe('Switching to dark. Say yes to confirm.');
+    expect(document.querySelector('.entoli-card')!.getAttribute('data-phase')).toBe('confirm');
+    expect(speak).toHaveBeenCalledWith('Switching to dark. Say yes to confirm.');
+  });
+});

@@ -22,7 +22,7 @@ import { mount } from '@entoli/sdk';
 import skill from './entoli.skill.json';
 
 mount({ el: '#entoli', skill, mode: 'voice', key: import.meta.env.VITE_ENTOLI_KEY });`}</pre>
-          <p>The key is optional and public (it ships in your front end). Without it every phrase resolves on the device; with it, unclear phrases go to Entoli, which may only choose among your declared acts.</p>
+          <p>Layer 1 needs nothing else: every request resolves on the device. For Layer 2 acts (Entoli AI answers), add your public app key from the dashboard; the AI may only choose among acts you set to L2. Prefer your own AI? Pass <code>resolver</code> to <code>mount()</code>.</p>
         </li>
         <li>
           <h3>Wire each act to the function that already does it</h3>
@@ -35,7 +35,8 @@ useEntoli('note.create', { text: 'freeText' }, ({ text }) => addNote(String(text
 useEntoli('settings.email', { email: 'freeText' }, ({ email }) => changeEmail(String(email)), {
   radius: 'external', exact: true, voiceOnly: true, // shows exactly the address; the yes covers only it
 });`}</pre>
-          <p>Plain JavaScript: <code>defineAct(name, slots, handler, options)</code> works the same way. On paid plans, the guided integration prepares these changes for you as a pull request you approve change by change.</p>
+          <p>Plain JavaScript: <code>defineAct(name, slots, handler, options)</code> works the same way.</p>
+          <p><strong>Or don't write it yourself.</strong> On L1, download the skill for Claude Code, Cursor or AGENTS.md (Skill tab) and ask your agent to integrate it. On L2, connect GitHub and speak to the dashboard: “integrate new note and search, by voice”, “approve all”, “open the pull request”.</p>
         </li>
       </ol>
       <h2>Check it</h2>

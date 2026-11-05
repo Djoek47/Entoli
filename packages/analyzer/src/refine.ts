@@ -187,8 +187,6 @@ export function mergeRefinement(scan: ScanResult, draft: Draft, ai: AiOut): { sk
   }
   if (!knowledge.length) knowledge.push(...draft.skill.knowledge.filter((k) => actNames.size > 0 || !k.can));
 
-  const anySetting = [...acts.values()].some((a) => a.kind === 'setting');
-  if (anySetting && draft.skill.layer === 'L1') notes.push('Settings acts found; layer set to L2.');
-  const skill: Skill = { ...draft.skill, layer: anySetting ? 'L2' : draft.skill.layer, map, acts: [...acts.values()], knowledge };
+  const skill: Skill = { ...draft.skill, map, acts: [...acts.values()], knowledge };
   return { skill, dropped, notes, sources: actSources };
 }

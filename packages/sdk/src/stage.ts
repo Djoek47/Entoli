@@ -36,6 +36,7 @@ font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--e-ink);font-size:1
 .entoli-mic{width:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .entoli-said{display:inline-block;margin:12px 0 6px;padding:4px 12px;background:var(--e-paper);border:1px solid var(--e-line);border-radius:999px;color:var(--e-muted);font-size:14px}
 .entoli-said q{color:var(--e-ink);font-style:normal}
+.entoli-reply{margin:0 0 8px;padding:8px 12px;border-left:3px solid var(--e-lime);background:var(--e-paper);border-radius:0 10px 10px 0;font-size:15px}
 .entoli-card{background:var(--e-paper);border:1.5px solid var(--e-ink);border-radius:16px;padding:16px;position:relative;overflow:hidden}
 .entoli-kicker{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-muted)}
 .entoli-kicker b{color:var(--e-lime-text);font-weight:500}
@@ -165,6 +166,8 @@ export function renderStage(entoli: Entoli, el: HTMLElement, opts: StageOptions 
     if (s.phase === 'idle' && !s.message) { stage.replaceChildren(); return; }
 
     const said = s.said ? h(doc, 'p', { class: 'entoli-said' }, 'You: ', h(doc, 'q', {}, s.said)) : null;
+    // Layer 2: what the AI said back, above the card.
+    const reply = s.reply && s.phase !== 'answer' ? h(doc, 'p', { class: 'entoli-reply' }, s.reply) : null;
     const card = h(doc, 'div', { class: `entoli-card ${s.phase}`, 'data-phase': s.phase });
     const kicker = h(doc, 'div', { class: 'entoli-kicker' }, KICKER[s.phase] ?? '', s.via === 'model' ? h(doc, 'b', {}, ' · read by AI') : null);
     card.append(kicker);
@@ -217,12 +220,14 @@ export function renderStage(entoli: Entoli, el: HTMLElement, opts: StageOptions 
         actions.append(btn('Close', 'ghost', () => entoli.reset()));
     }
     card.append(actions);
-    if (said) stage.replaceChildren(said, card);
-    else stage.replaceChildren(card);
+    stage.replaceChildren(...([said, reply, card].filter(Boolean) as HTMLElement[]));
 
-    if (voice && opts.speak !== false && s.channel === 'voice' && s.message && s.message !== lastSpoken && (s.phase === 'answer' || s.phase === 'done' || s.phase === 'blocked')) {
-      lastSpoken = s.message;
-      opts.speech?.speak?.(s.message);
+    // Voice mode speaks back: the AI's reply first (Layer 2), otherwise the outcome.
+    const spoken = s.reply && (s.phase === 'hold' || s.phase === 'confirm' || s.phase === 'exact' || s.phase === 'ask' || s.phase === 'answer') ? s.reply
+      : s.phase === 'answer' || s.phase === 'done' || s.phase === 'blocked' ? s.message : undefined;
+    if (voice && opts.speak !== false && s.channel === 'voice' && spoken && spoken !== lastSpoken) {
+      lastSpoken = spoken;
+      opts.speech?.speak?.(spoken);
     }
   };
 

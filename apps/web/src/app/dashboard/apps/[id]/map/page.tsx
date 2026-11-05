@@ -1,5 +1,7 @@
 import type { MapNode } from '@entoli/sdk/skill';
-import { setRepoAction } from '../../../actions';
+import { setActLayerAction, setRepoAction } from '../../../actions';
+import { actLayer } from '@entoli/sdk/skill';
+import { PLANS } from '@/lib/plans';
 import { loadApp } from '@/lib/app-page';
 import { githubAppConfigured, installUrl } from '@/lib/github';
 
@@ -50,13 +52,24 @@ export default async function MapPage({ params, searchParams }: { params: Promis
       {skill?.acts.length ? (
         <section>
           <h2>Acts</h2>
-          <table><thead><tr><th>Act</th><th>Phrases</th><th>Slots</th><th>Radius</th><th>Contract</th></tr></thead>
+          <p className="muted">Choose a layer for each act: <strong>L2</strong>, Entoli AI answers and makes the change on the card; <strong>L1</strong>, only the device can trigger it, the AI never sees it; <strong>off</strong>, not connected at all (keep sensitive things manual).</p>
+          <table><thead><tr><th>Act</th><th>Phrases</th><th>Slots</th><th>Radius</th><th>Contract</th><th>Layer</th></tr></thead>
             <tbody>{skill.acts.map((a) => (
               <tr key={a.name}><td><code>{a.name}</code><div className="muted">{a.title}</div></td>
                 <td>{a.phrases.slice(0, 3).join(', ')}</td>
                 <td className="mono">{Object.entries(a.slots ?? {}).map(([k, s]) => `${k}:${s.type}`).join(' ')}</td>
                 <td><span className={`pill ${a.radius === 'external' ? 'warn' : ''}`}>{a.radius}</span></td>
-                <td className="muted">{[a.undo ? 'undo' : 'no undo', a.kind === 'setting' ? 'setting' : '', a.exact ? 'exact' : '', a.voiceOnly ? 'voice only' : ''].filter(Boolean).join(' · ')}</td></tr>
+                <td className="muted">{[a.undo ? 'undo' : 'no undo', a.kind === 'setting' ? 'setting' : '', a.exact ? 'exact' : '', a.voiceOnly ? 'voice only' : ''].filter(Boolean).join(' · ')}</td>
+                <td>
+                  <form action={setActLayerAction.bind(null, app.id, a.name)} style={{ display: 'flex', gap: 6 }}>
+                    <select name="layer" defaultValue={actLayer(skill, a)} aria-label={`Layer for ${a.name}`} style={{ minHeight: 32, padding: '4px 8px', width: 'auto' }}>
+                      <option value="L2" disabled={!PLANS[app.plan].ai}>L2 · AI answers</option>
+                      <option value="L1">L1 · device only</option>
+                      <option value="off">off · not connected</option>
+                    </select>
+                    <button className="btn small">Set</button>
+                  </form>
+                </td></tr>
             ))}</tbody></table>
         </section>
       ) : null}

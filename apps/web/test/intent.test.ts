@@ -76,21 +76,36 @@ describe('/api/intent', () => {
     expect((await getUsage(db, app.id)).textIntents).toBe(0);
   });
 
-  it('meters voice turns, and voice needs a paid plan', async () => {
-    const free = await setup('developer');
-    expect((await call(free.key, { phrase: 'new note milk', channel: 'voice', local: { act: 'note.create' } })).status).toBe(402);
-    const paid = await setup('l1');
-    const r = await call(paid.key, { phrase: 'new note milk', channel: 'voice', local: { act: 'note.create' } });
-    expect(r).toMatchObject({ status: 200, body: { metered: 'voice' } });
-    expect((await getUsage(db, paid.app.id)).voiceTurns).toBe(1);
+  it('Entoli AI is Layer 2: free and L1 apps are refused, the device answers for them', async () => {
+    for (const plan of ['developer', 'l1'] as const) {
+      const { key, app } = await setup(plan);
+      const r = await call(key, { phrase: 'make it purple', channel: 'text', acts: clientActs }, { choose: fixed('settings.theme', { theme: 'dark' }) });
+      expect(r.status).toBe(402);
+      expect(r.body.error).toMatch(/L2 plan/);
+      expect((await getUsage(db, app.id)).textIntents).toBe(0);
+    }
   });
 
-  it('stops the free plan at its monthly limit, and warns paid plans past 80%', async () => {
-    const free = await setup('developer');
-    await meter(db, free.app.id, { text: 1000 });
-    const r = await call(free.key, { phrase: 'x', channel: 'text', acts: clientActs }, { choose: fixed(null) });
-    expect(r.status).toBe(402);
-    expect(r.body.error).toMatch(/1,000 intents/);
+  it('meters AI voice turns separately from text, and returns what to say', async () => {
+    const { key, app } = await setup('l2');
+    const choose: Chooser = vi.fn(async () => ({ choice: { act: 'note.create', slots: { text: 'milk' }, say: 'Adding a note: milk.' }, usage: { tokensIn: 1, tokensOut: 1, cacheRead: 0, cacheWrite: 0 }, costMicros: 24 }));
+    const r = await call(key, { phrase: 'remember milk', channel: 'voice', acts: clientActs, hint: 'note.create' }, { choose });
+    expect(r.body).toEqual({ act: 'note.create', slots: { text: 'milk' }, say: 'Adding a note: milk.' });
+    expect((choose as unknown as { mock: { calls: [{ hint?: string }][] } }).mock.calls[0]![0].hint).toBe('note.create');
+    expect(await getUsage(db, app.id)).toMatchObject({ voiceTurns: 1, textIntents: 0 });
+  });
+
+  it('only offers the AI acts set to Layer 2', async () => {
+    const { key, app, user } = await setup('l2');
+    const mixed = { ...skill, layer: 'L2', acts: skill.acts.map((a) => (a.name === 'note.delete' ? { ...a, layer: 'L1' } : a.name === 'settings.email' ? { ...a, layer: 'off' } : a)) };
+    expect((await saveSkill(db, user.id, app.id, mixed, 'published')).ok).toBe(true);
+    const choose = fixed(null);
+    await call(key, { phrase: 'x', channel: 'text', acts: [...clientActs, { name: 'settings.email', slots: {} }] }, { choose });
+    const offered = (choose as unknown as { mock: { calls: [{ acts: { name: string }[] }][] } }).mock.calls[0]![0].acts.map((a) => a.name);
+    expect(offered.sort()).toEqual(['note.create', 'settings.theme']);
+  });
+
+  it('warns L2 apps past 80% of their AI intents', async () => {
     const paid = await setup('l2');
     await meter(db, paid.app.id, { text: 85_000 });
     const r2 = await call(paid.key, { phrase: 'x', channel: 'text', acts: clientActs }, { choose: fixed(null) });

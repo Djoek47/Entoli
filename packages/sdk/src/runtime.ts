@@ -18,7 +18,7 @@ import { LocalResolver } from './engine/local.js';
 import { pickAct } from './engine/route.js';
 import { matchPhrase, tokenize } from './engine/text.js';
 import { answerFrom, isKnowledgeQuestion, NO_KNOWLEDGE } from './knowledge.js';
-import { optionValue, type ChoiceOption, type Mode, type Radius, type Skill, type SkillAct, type SkillSlot, type SlotType } from './skill.js';
+import { actLayer, optionValue, type ActLayer, type ChoiceOption, type Layer, type Mode, type Radius, type Skill, type SkillAct, type SkillSlot, type SlotType } from './skill.js';
 
 export type RuntimeSlot = Omit<SkillSlot, 'options'> & { options?: ChoiceOption[] | (() => ChoiceOption[]) };
 export type SlotsSpec = Record<string, RuntimeSlot | SlotType>;
@@ -78,18 +78,22 @@ export type StageState = {
   choices?: { act: string; title: string }[];
   /** Where the act was understood: on device or by the model. */
   via?: 'device' | 'model';
+  /** Layer 2: what the AI said back (shown above the card, spoken in voice mode). */
+  reply?: string;
   receipts: Receipt[];
 };
 
 export type RemoteRequest = {
   phrase: string;
   channel: Channel;
+  layer: Layer;
+  /** The act the device matched, if any: the AI can confirm it cheaply. */
+  hint?: string;
   acts: { name: string; title: string; phrases: string[]; slots: Record<string, { type: SlotType; options?: string[] }> }[];
 };
-export type RemoteChoice = { act: string | null; slots?: Record<string, unknown> } | null;
+/** What the AI (or a developer's own resolver) answers: an act from the skill or none, and, on Layer 2, what to say. */
+export type RemoteChoice = { act: string | null; slots?: Record<string, unknown>; say?: string } | null;
 export type RemoteResolver = (req: RemoteRequest) => Promise<RemoteChoice>;
-/** Reports a voice turn that was resolved on the device (metering only). */
-export type VoiceMeter = (req: { phrase: string; channel: 'voice'; local: { act: string } }) => Promise<void>;
 
 export type Timers = {
   now(): number;
@@ -110,10 +114,14 @@ export type EntoliOptions = {
   /** Where /api/intent lives. Defaults to https://entoli.dev */
   endpoint?: string;
   mode?: Mode;
-  /** Replace the network fallback (tests, self-hosting). */
+  /** Override the skill's layer. */
+  layer?: Layer;
+  /**
+   * Your own AI ("bring your own"): asked on Layer 1 for phrases the device did
+   * not understand, and on Layer 2 in place of Entoli's AI. It may only choose
+   * among declared acts, like Entoli's.
+   */
   resolver?: RemoteResolver;
-  /** Replace the voice-turn meter (tests, self-hosting). */
-  voiceMeter?: VoiceMeter;
   timers?: Timers;
   fetch?: typeof fetch;
   /**
@@ -134,6 +142,8 @@ type Registered = {
   exact: boolean;
   kind: 'feature' | 'setting';
   declared: boolean;
+  /** Effective layer: 'L2' the AI may pick it, 'L1' device only. ('off' acts are never registered.) */
+  layer: Exclude<ActLayer, 'off'>;
   handler: ActHandler;
   describe?: ActOptions['describe'];
   prepare?: ActOptions['prepare'];
@@ -146,6 +156,7 @@ type Pending = {
   via: 'device' | 'model';
   said: string;
   channel: Channel;
+  reply?: string;
 };
 
 const RANK: Record<Radius, number> = { self: 0, 'other-person': 1, external: 2 };
@@ -181,10 +192,13 @@ function humanize(name: string): string {
 export class Entoli {
   readonly skill: Skill;
   readonly mode: Mode;
+  /** L1: the device answers (menu responds). L2: Entoli's AI answers, then the change goes on the card. */
+  readonly layer: Layer;
   private readonly confirmMode: 'contract' | 'always';
   private readonly key?: string;
   private readonly remote?: RemoteResolver;
-  private readonly voiceMeter?: VoiceMeter;
+  /** A developer's own resolver on a Layer 1 app: asked only when the device did not understand. */
+  private readonly byo: boolean;
   private readonly timers: Timers;
   private readonly acts = new Map<string, Registered>();
   private readonly listeners = new Set<(s: StageState) => void>();
@@ -203,10 +217,12 @@ export class Entoli {
     this.confirmMode = opts.confirm ?? 'contract';
     if (opts.key !== undefined) this.key = opts.key;
     this.timers = opts.timers ?? realTimers;
+    this.layer = opts.layer ?? opts.skill.layer;
+    // Layer 1: no Entoli AI. Only a resolver the developer brings is ever asked.
+    // Layer 2: Entoli's AI (with the app key), or the developer's own resolver.
     if (opts.resolver) this.remote = opts.resolver;
-    else if (opts.key) this.remote = httpResolver(opts.endpoint ?? 'https://entoli.dev', opts.key, opts.fetch);
-    if (opts.voiceMeter) this.voiceMeter = opts.voiceMeter;
-    else if (opts.key) this.voiceMeter = httpVoiceMeter(opts.endpoint ?? 'https://entoli.dev', opts.key, opts.fetch);
+    else if (opts.key && (this.layer === 'L2' || opts.skill.acts.some((a) => a.layer === 'L2'))) this.remote = httpResolver(opts.endpoint ?? 'https://entoli.dev', opts.key, opts.fetch);
+    this.byo = !!opts.resolver && this.layer === 'L1' && !opts.skill.acts.some((a) => a.layer === 'L2');
   }
 
   get state(): StageState {
@@ -235,6 +251,11 @@ export class Entoli {
    */
   register(name: string, slots: SlotsSpec, handler: ActHandler, opts: ActOptions = {}): () => void {
     const declared = this.skill.acts.find((a) => a.name === name);
+    const layer = declared ? actLayer({ layer: this.layer }, declared) : this.layer;
+    if (layer === 'off') {
+      // Declared but not connected: the developer chose to keep it manual.
+      return () => {};
+    }
     const skillSlots = declared?.slots ?? {};
     const merged: Record<string, RuntimeSlot> = {};
     for (const [k, v] of Object.entries(skillSlots)) merged[k] = { ...v };
@@ -256,6 +277,7 @@ export class Entoli {
       exact: !!(declared?.exact || opts.exact),
       kind: declared?.kind === 'setting' || opts.kind === 'setting' ? 'setting' : 'feature',
       declared: !!declared,
+      layer,
       handler,
     };
     if (opts.undo && declared?.undo !== false) reg.undoFn = opts.undo;
@@ -367,10 +389,45 @@ export class Entoli {
       if (named.length === 1) decision = { kind: 'start', act: named[0]!.act, scores };
     }
 
+    // Layer 2: the AI answers every new request, then the change goes on the card.
+    const deviceOnly = decision.kind === 'start' && this.acts.get(decision.act)?.layer === 'L1';
+    const anyAi = [...this.acts.values()].some((r) => r.layer === 'L2' && r.declared);
+    if (anyAi && this.remote && !this.byo && !deviceOnly) {
+      const hint = decision.kind === 'start' ? decision.act : null;
+      this.set({ phase: 'thinking', said, channel });
+      let choice: RemoteChoice = null;
+      try {
+        choice = await this.remote(this.remoteRequest(said, channel, hint, 'L2'));
+      } catch (e) {
+        // The AI is unreachable or over its limit: the device still understands what it can.
+        if (decision.kind === 'none') {
+          this.set({ phase: 'error', said, channel, message: `Could not reach Entoli: ${(e as Error).message}` });
+          return this._state;
+        }
+        choice = null;
+      }
+      if (choice) {
+        const reply = typeof choice.say === 'string' && choice.say.trim() ? choice.say.trim().slice(0, 400) : undefined;
+        const reg = choice.act ? this.acts.get(choice.act) : undefined;
+        // The model may only choose among declared, wired, Layer 2 acts. Anything else is no act.
+        if (reg && reg.declared && reg.layer === 'L2') {
+          const admitted = this.admit(reg, choice.slots ?? {});
+          // When the device understood the same act, the AI only confirmed it: not a model guess.
+          const agrees = decision.kind === 'start' && decision.act === reg.name;
+          const fill = agrees ? this.fillLocal(said, defs.find((d) => d.name === reg.name)!, ctx) : { values: {}, labels: {} };
+          return this.begin(reg, { values: { ...fill.values, ...admitted.values }, labels: { ...fill.labels, ...admitted.labels } }, said, channel, agrees ? 'device' : 'model', reply);
+        }
+        // A reply that came with a refused pick would describe something that will not happen.
+        if (reply && !choice.act) {
+          this.stats.model++;
+          this.set({ phase: 'answer', said, channel, message: reply, can: null, via: 'model', reply });
+          return this._state;
+        }
+      }
+    }
+
     if (decision.kind === 'start') {
       const def = defs.find((d) => d.name === decision.act)!;
-      // Voice turns are metered even when the device understood them.
-      if (channel === 'voice') void this.voiceMeter?.({ phrase: said, channel: 'voice', local: { act: decision.act } }).catch(() => {});
       return this.begin(this.acts.get(decision.act)!, this.fillLocal(said, def, ctx), said, channel, 'device');
     }
     if (decision.kind === 'narrow') {
@@ -383,17 +440,17 @@ export class Entoli {
       return this._state;
     }
 
-    if (this.remote) {
+    // Layer 1 has no Entoli AI; a developer's own resolver ("bring your own AI") may still be asked.
+    if (this.byo && this.remote) {
       this.set({ phase: 'thinking', said, channel });
       let choice: RemoteChoice = null;
       try {
-        choice = await this.remote(this.remoteRequest(said, channel));
+        choice = await this.remote(this.remoteRequest(said, channel, null, 'all'));
       } catch (e) {
-        this.set({ phase: 'error', said, channel, message: `Could not reach Entoli: ${(e as Error).message}` });
+        this.set({ phase: 'error', said, channel, message: `Could not reach the resolver: ${(e as Error).message}` });
         return this._state;
       }
       const reg = choice?.act ? this.acts.get(choice.act) : undefined;
-      // The model may only choose among declared, wired acts. Anything else is "none".
       if (choice && reg && reg.declared) {
         const { values, labels } = this.admit(reg, choice.slots ?? {});
         return this.begin(reg, { values, labels }, said, channel, 'model');
@@ -457,11 +514,13 @@ export class Entoli {
     return { values, labels };
   }
 
-  private remoteRequest(phrase: string, channel: Channel): RemoteRequest {
+  private remoteRequest(phrase: string, channel: Channel, hint: string | null, which: 'L2' | 'all'): RemoteRequest {
     return {
       phrase,
       channel,
-      acts: [...this.acts.values()].filter((r) => r.declared).map((r) => ({
+      layer: this.layer,
+      ...(hint ? { hint } : {}),
+      acts: [...this.acts.values()].filter((r) => r.declared && (which === 'all' || r.layer === 'L2')).map((r) => ({
         name: r.name,
         title: r.title,
         phrases: r.phrases,
@@ -473,9 +532,9 @@ export class Entoli {
     };
   }
 
-  private begin(reg: Registered, fill: { values: Record<string, unknown>; labels: Record<string, string> }, said: string, channel: Channel, via: 'device' | 'model'): StageState {
+  private begin(reg: Registered, fill: { values: Record<string, unknown>; labels: Record<string, string> }, said: string, channel: Channel, via: 'device' | 'model', reply?: string): StageState {
     this.stats[via]++;
-    this.pending = { reg, values: { ...fill.values }, labels: { ...fill.labels }, via, said, channel };
+    this.pending = { reg, values: { ...fill.values }, labels: { ...fill.labels }, via, said, channel, ...(reply ? { reply } : {}) };
     return this.advance();
   }
 
@@ -489,7 +548,7 @@ export class Entoli {
   private advance(): StageState {
     const p = this.pending!;
     const { reg, said, channel } = p;
-    const base = { said, channel, act: reg.name, title: reg.title, args: this.args(p), via: p.via };
+    const base = { said, channel, act: reg.name, title: reg.title, args: this.args(p), via: p.via, ...(p.reply ? { reply: p.reply } : {}) };
 
     for (const [name, s] of Object.entries(reg.slots)) {
       if (s.required && !(name in p.values)) {
@@ -636,24 +695,6 @@ export function httpResolver(endpoint: string, key: string, f: typeof fetch = gl
     }
     const body = (await res.json()) as RemoteChoice;
     return body;
-  };
-}
-
-let warnedVoice = false;
-export function httpVoiceMeter(endpoint: string, key: string, f: typeof fetch = globalThis.fetch?.bind(globalThis)): VoiceMeter {
-  return async (req) => {
-    if (!f) return;
-    const res = await f(`${endpoint.replace(/\/$/, '')}/api/intent`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${key}` },
-      body: JSON.stringify(req),
-      keepalive: true,
-    });
-    if (!res.ok && !warnedVoice) {
-      warnedVoice = true;
-      const msg = await res.json().then((b: { error?: string }) => b.error).catch(() => `HTTP ${res.status}`);
-      console.warn(`[entoli] voice turn not metered: ${msg}`);
-    }
   };
 }
 

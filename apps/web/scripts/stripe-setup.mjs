@@ -31,15 +31,14 @@ async function price(lookup_key, params) {
 const voiceMeter = await meter('entoli_voice_turns', 'Entoli voice turns');
 const overageMeter = await meter('entoli_text_overage', 'Entoli text intents over plan');
 
-const l1 = await product('entoli_l1', 'Entoli L1 Control', '25,000 text intents a month per app; voice metered.');
-const l2 = await product('entoli_l2', 'Entoli L2 Integrated', '100,000 text intents a month per app; settings by voice; voice metered.');
-const voice = await product('entoli_voice', 'Entoli voice turns', 'Per spoken turn.');
+const l1 = await product('entoli_l1', 'Entoli L1 Skill', 'The skill for one app: analyzer, map, SDK, keys, tester, export to coding agents. Layer 1: no AI at runtime.');
+const l2 = await product('entoli_l2', 'Entoli L2 Skill + integration', 'Entoli AI answers your users (100,000 intents a month), and the voice tool integrates your app by speaking.');
+const voice = await product('entoli_voice', 'Entoli AI voice turns', 'Per spoken turn answered by Entoli AI.');
 const overage = await product('entoli_overage', 'Entoli extra text intents', '$2 per 1,000 beyond the plan.');
 const managed = await product('entoli_managed', 'Entoli managed setup', 'We scan and integrate. One time.');
 
 await price('entoli_l1_monthly', { product: l1, unit_amount: 4900, recurring: { interval: 'month' } });
 await price('entoli_l2_monthly', { product: l2, unit_amount: 29900, recurring: { interval: 'month' } });
-await price('entoli_voice_l1', { product: voice, unit_amount: 2, recurring: { interval: 'month', usage_type: 'metered', meter: voiceMeter }, nickname: 'Voice (L1) $0.02/turn' });
 await price('entoli_voice_l2', { product: voice, unit_amount_decimal: Stripe.Decimal.from('1.5'), recurring: { interval: 'month', usage_type: 'metered', meter: voiceMeter }, nickname: 'Voice (L2) $0.015/turn' });
 await price('entoli_text_overage', { product: overage, unit_amount_decimal: Stripe.Decimal.from('0.2'), recurring: { interval: 'month', usage_type: 'metered', meter: overageMeter }, nickname: '$2 per 1,000 intents' });
 await price('entoli_managed_setup', { product: managed, unit_amount: 250000 });

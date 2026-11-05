@@ -287,13 +287,13 @@ footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--di
         <article class="layer l1" id="layer-1">
           <span class="n">L1</span><span class="tag live">Available now</span>
           <h3>Control</h3>
-          <p>Entoli manages the features and controls you choose. It opens menus, fills forms and runs actions, always on a card the user can see and stop.</p>
+          <p>No AI at runtime. The user types or speaks, and the menu responds: Entoli opens menus, fills forms and runs actions on the device, always on a card the user can see and stop.</p>
           <ul><li>You pick which features it may touch</li><li>Works from your UI map, no deep code access</li><li>Like ChoreMaxx: chores, rewards, calendars by voice</li></ul>
         </article>
         <article class="layer l2" id="layer-2">
           <span class="n">L2</span><span class="tag live">Available now</span>
           <h3>Integrated</h3>
-          <p>Entoli learns your codebase and style, then controls deeper parts of the app: settings, parameters and access. Changes to those are made by voice only, with a clear yes.</p>
+          <p>The user speaks and Entoli's AI answers, then makes the change through your UI, on the same card. It learns your codebase and style. Choose Layer 1, Layer 2 or off for each feature.</p>
           <ul><li>Reads the code behind every screen</li><li>Settings and permissions by voice, confirmed</li><li>Like Circe et Venus: the whole platform, spoken</li></ul>
         </article>
         <article class="layer l3" id="layer-3">
@@ -412,11 +412,11 @@ mount({ el: '#app', skill, key: process.env.ENTOLI_KEY });</pre></div>
   <section id="pricing">
     <div class="wrap">
       <div class="head"><span class="eyebrow">Pricing</span><h2>Pay for the depth and the voice</h2>
-        <p class="lede">Per app, per month. Text intents are cheap because most resolve on the device; voice is metered because every spoken turn costs speech and AI.</p></div>
+        <p class="lede">Per app, per month. L1 is the skill: your app answers on the device, or your own coding agent wires it in. L2 is the skill and the integration: Entoli's AI answers your users, and you integrate by speaking.</p></div>
       <div class="plans">
-        <div class="plan"><h3>Developer</h3><span class="cost">$0</span><ul><li>1 app · Layer 1 · text</li><li>1,000 intents a month</li><li>Studio: map, teach, test</li></ul></div>
-        <div class="plan"><h3>Control · L1</h3><span class="cost">$49 / app / month</span><ul><li>25,000 text intents</li><li>Voice: $0.02 per spoken turn</li><li>Self-serve SDK and keys</li></ul></div>
-        <div class="plan feature"><h3>Integrated · L2</h3><span class="cost">$299 / app / month</span><ul><li>Learns code and style</li><li>100,000 text intents</li><li>Voice: $0.015 per turn</li><li>Settings and access by voice</li></ul></div>
+        <div class="plan"><h3>Developer</h3><span class="cost">$0</span><ul><li>1 app · Layer 1 · text</li><li>Answered on the device</li><li>Studio: map, teach, test</li></ul></div>
+        <div class="plan"><h3>Skill · L1</h3><span class="cost">$49 / app / month</span><ul><li>Your app's skill and the SDK</li><li>Layer 1: the device answers, no AI</li><li>Voice input (transcription)</li><li>Export to Claude Code, Cursor and other agents</li></ul></div>
+        <div class="plan feature"><h3>Skill + integration · L2</h3><span class="cost">$299 / app / month</span><ul><li>Entoli AI answers your users: 100,000 intents</li><li>AI voice: $0.015 per turn</li><li>Voice tool: connect GitHub, then speak your integration into existence</li><li>Layer 1, 2 or off per feature</li></ul></div>
         <div class="plan"><h3>Managed</h3><span class="cost">From $2,500 once</span><ul><li>We scan and integrate over MCP</li><li>First skill built and tested</li><li>Then any monthly plan</li></ul></div>
       </div>
       <p class="note" style="margin-top:12px">Proposed launch pricing. Extra text intents $2 per 1,000. Layer 3 and enterprise: talk to us.</p>

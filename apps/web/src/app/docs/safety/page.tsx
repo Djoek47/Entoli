@@ -8,6 +8,8 @@ export default function Safety() {
       <div className="kicker" style={{ marginTop: 24 }}>Docs</div>
       <h1>The safety model</h1>
       <DocsNav at="/docs/safety" />
+      <h2>Two layers, chosen per feature</h2>
+      <p><strong>Layer 1</strong>: no AI. The user types or speaks (speech is only transcribed) and the device matches the request to a declared act; the menu responds. <strong>Layer 2</strong>: Entoli's AI answers the user, then makes the change through your UI. Each act can be set to <code>L1</code>, <code>L2</code> or <code>off</code> (not connected); the AI never sees L1 or off acts. Keep sensitive things on L1 or off.</p>
       <h2>AI chooses; it never invents</h2>
       <p>At runtime the model only picks among acts your skill declares and your code has wired. The act name and slot names are constrained by the response schema and checked again on the server and in the SDK. A choice the model makes always waits for an explicit yes.</p>
       <h2>The commit contract</h2>

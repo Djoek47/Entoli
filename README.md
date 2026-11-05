@@ -2,6 +2,10 @@
 
 The AIUIC for developers. Connect your app's repository; Entoli maps every screen, button and setting, drafts what the app can and can't do, and gives you a skill (`entoli.skill.json`) plus an SDK so people can operate your app by intent, typed or spoken.
 
+**Two layers, chosen per feature.** Layer 1: no AI; the user types or speaks and the menu responds on the device. Layer 2: Entoli's AI answers the user, then makes the change through your UI. Each act can be L1, L2 or off (not connected).
+
+**Two plans.** L1 ($49/app/month) is the skill: analyzer, map, SDK, tester, and an export for Claude Code, Cursor or any agent so your own tools wire it in. L2 ($299/app/month) is the skill and the integration: Entoli's AI answers your users, and the voice tool lets you connect GitHub and speak the integration into existence; the dashboard runs on Entoli itself.
+
 The AI only chooses among acts you declare and wire to your real functions. Small, reversible actions run after a 1.6 s visible hold with a way out; anything else waits for a yes; anything that reaches outside shows exactly what will run, and the yes is bound to that.
 
 ## Integrate in 3 steps
@@ -37,7 +41,7 @@ useEntoli('note.create', { text: 'freeText' }, ({ text }) => addNote(String(text
 });
 ```
 
-Plain JavaScript uses `defineAct(name, slots, handler, options)`. Paid plans can have the dashboard prepare these changes as one pull request, approved change by change. Check the result with `npx entoli-test entoli.skill.json <preview-url>`.
+Plain JavaScript uses `defineAct(name, slots, handler, options)`. Or skip the typing: on L1, download the skill for your coding agent (Skill tab); on L2, speak to the dashboard ("integrate new note and search by voice", "approve all", "open the pull request") and approve the pull request it prepares. Check the result with `npx entoli-test entoli.skill.json <preview-url>`.
 
 Full docs: `/docs` in the web app (quickstart, skill format, safety model, pricing).
 

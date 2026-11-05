@@ -82,7 +82,7 @@ describe('draft', () => {
     expect(by.shareNote!.radius).toBe('other-person');
     expect(by.saveEmail).toMatchObject({ radius: 'external', exact: true, kind: 'setting', voiceOnly: true });
     expect(by.theme).toMatchObject({ kind: 'setting', voiceOnly: true, slots: { theme: { type: 'choice', options: ['light', 'dark'], required: true } } });
-    expect(d.skill.layer).toBe('L2');
+    expect(d.skill.layer).toBe('L1');
     expect(d.skill.map.find((n) => n.act === 'deleteNote')!.selector).toBe('[data-testid="delete"]');
     expect(by['nav.open']!.slots!.screen!.options).toEqual([{ value: '/', label: 'Notes' }, { value: '/settings', label: 'Settings' }]);
     expect(d.sources.deleteNote).toEqual([expect.objectContaining({ file: 'src/pages/Notes.tsx', component: 'NotesPage', handler: 'deleteNote' })]);

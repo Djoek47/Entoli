@@ -35,7 +35,7 @@ export type Answers = {
 };
 
 export const QUESTIONS = {
-  layer: { q: 'Which layer?', options: [['L1', 'L1 Control: declared features'], ['L2', 'L2 Integrated: also settings, by voice with a yes']] },
+  layer: { q: 'Which layer by default? (each feature can be changed later)', options: [['L1', 'Layer 1: the device answers, no AI'], ['L2', 'Layer 2: Entoli AI answers, then makes the change']] },
   mode: { q: 'Text, or voice too?', options: [['text', 'Text only (cheapest)'], ['voice', 'Voice and text']] },
   design: { q: 'How should the bar and the card look?', options: [['entoli', "Copy Entoli's design"], ['theirs', 'Inherit your fonts and colours'], ['generate', 'Generate a theme from your CSS variables']] },
   settingsBy: { q: 'Who may change settings through Entoli?', options: [['anyone', 'Any signed-in user'], ['admins', 'Admins only'], ['nobody', 'Nobody (settings stay manual)']] },
@@ -269,7 +269,7 @@ export async function latestSources(db: DB, appId: string) {
 type AppRow = { id: string; plan: keyof typeof PLANS; skill: unknown; repo: string | null; installationId: string | null };
 
 export function integrationAllowed(app: AppRow): string | null {
-  if (app.plan === 'developer') return 'Guided integration is part of the L1 and L2 plans.';
+  if (!PLANS[app.plan].integration) return 'Integration (by voice, or by answering a few questions) is part of the L2 plan. On L1, export the skill to your coding agent instead (Skill tab).';
   if (!app.repo) return 'Connect a repository first.';
   return null;
 }

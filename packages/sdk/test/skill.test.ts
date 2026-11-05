@@ -15,11 +15,9 @@ describe('skill validator', () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.errors.join()).toMatch(/closed set/);
   });
-  it('refuses setting acts on layer L1', () => {
+  it('allows settings on either layer (the layer is about AI, not reach)', () => {
     const s = clone(); s.layer = 'L1';
-    const r = validateSkill(s);
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.join()).toMatch(/need layer "L2"/);
+    expect(validateSkill(s).ok).toBe(true);
   });
   it('catches duplicates, unknown parents, unknown acts and bad radius', () => {
     const s = clone();

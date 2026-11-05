@@ -40,6 +40,14 @@ async function newApp(plan: 'developer' | 'l1' | 'l2' = 'developer') {
 }
 
 describe('checkout', () => {
+  it('L1 is the skill: one flat price, nothing metered', async () => {
+    const s = fakeStripe();
+    const { user, app } = await newApp();
+    await createCheckout(db, s, { app, user, plan: 'l1', origin: 'https://entoli.dev' });
+    const params = (s.checkout.sessions.create as unknown as { mock: { calls: [Record<string, unknown>][] } }).mock.calls[0]![0];
+    expect(params.line_items).toEqual([{ price: 'price_entoli_l1_monthly', quantity: 1 }]);
+  });
+
   it('creates one customer per app and a subscription with flat + metered prices', async () => {
     const s = fakeStripe();
     const { user, app } = await newApp();
@@ -117,12 +125,12 @@ describe('webhook', () => {
 describe('usage reporting', () => {
   it('reports only the deltas, with identifiers that make retries safe', async () => {
     const s = fakeStripe();
-    const { app } = await newApp('l1');
-    await newApp(); // a free app: never reported
+    const { app } = await newApp('l2');
+    await newApp('l1'); // the skill plan: flat price, nothing metered
     const { apps } = await import('@/db/schema');
     const { eq } = await import('drizzle-orm');
     await db.update(apps).set({ stripeCustomerId: 'cus_9' }).where(eq(apps.id, app.id));
-    await meter(db, app.id, { text: 25_010, voice: 7 });
+    await meter(db, app.id, { text: 100_010, voice: 7 });
 
     const first = await reportUsage(db, s);
     expect(first).toEqual([{ app: app.id, voice: 7, overage: 10 }]);
@@ -145,13 +153,9 @@ describe('the Developer plan covers one app', () => {
     expect(await freeAppAllowed(db, (await getApp(db, u.id, first.id))!)).toBe(true);
     expect(await freeAppAllowed(db, (await getApp(db, u.id, second.id))!)).toBe(false);
 
-    // Through the API: the second app is refused until it is upgraded.
-    await setPlan(db, second.id, 'l2', { id: 's', status: 'active' });
-    expect((await saveSkill(db, u.id, second.id, skill, 'published')).ok).toBe(true);
-    const { key } = await createKey(db, u.id, second.id);
-    await setPlan(db, second.id, 'developer');
-    const r = await handleIntent(db, { key, origin: null, body: { phrase: 'x', channel: 'text', acts: [] } }, { modelAvailable: false });
+    // Free and L1 apps never reach Entoli's AI: the device answers.
+    const r = await handleIntent(db, { key: (await (async () => { await setPlan(db, second.id, 'l2', { id: 's', status: 'active' }); expect((await saveSkill(db, u.id, second.id, skill, 'published')).ok).toBe(true); const k = await createKey(db, u.id, second.id); await setPlan(db, second.id, 'developer'); return k.key; })()), origin: null, body: { phrase: 'x', channel: 'text', acts: [] } }, { modelAvailable: false });
     expect(r.status).toBe(402);
-    expect(r.body.error).toMatch(/one app/);
+    expect(r.body.error).toMatch(/L2 plan/);
   });
 });

@@ -97,8 +97,9 @@ export async function saveSkill(db: DB, ownerId: string, appId: string, input: u
   if (!app) return { ok: false, errors: ['App not found.'] };
   const r = validateSkill(input);
   if (!r.ok) return { ok: false, errors: r.errors };
-  if (status === 'published' && !PLANS[app.plan].layers.includes(r.skill.layer)) {
-    return { ok: false, errors: [`Layer ${r.skill.layer} needs the L2 plan. You are on ${PLANS[app.plan].name}.`] };
+  const usesAi = r.skill.layer === 'L2' ? r.skill.acts.some((a) => a.layer !== 'L1' && a.layer !== 'off') : r.skill.acts.some((a) => a.layer === 'L2');
+  if (status === 'published' && usesAi && !PLANS[app.plan].ai) {
+    return { ok: false, errors: [`Layer 2 (Entoli AI answers) needs the L2 plan. You are on ${PLANS[app.plan].name}: set those acts to "L1" or upgrade.`] };
   }
   await db.update(apps).set({ skill: r.skill, skillStatus: status }).where(eq(apps.id, appId));
   return { ok: true, warnings: r.warnings };
@@ -150,21 +151,22 @@ export type UsageRow = typeof usage.$inferSelect;
 
 export async function getUsage(db: DB, appId: string, p = period()): Promise<UsageRow> {
   const [u] = await db.select().from(usage).where(and(eq(usage.appId, appId), eq(usage.period, p)));
-  return u ?? { appId, period: p, textIntents: 0, voiceTurns: 0, modelCalls: 0, tokensIn: 0, tokensOut: 0, costMicros: 0, reportedVoice: 0, reportedOverage: 0 };
+  return u ?? { appId, period: p, textIntents: 0, voiceTurns: 0, modelCalls: 0, toolTurns: 0, tokensIn: 0, tokensOut: 0, costMicros: 0, reportedVoice: 0, reportedOverage: 0 };
 }
 
-export type Meter = { text?: number; voice?: number; modelCalls?: number; tokensIn?: number; tokensOut?: number; costMicros?: number };
+export type Meter = { text?: number; voice?: number; tool?: number; modelCalls?: number; tokensIn?: number; tokensOut?: number; costMicros?: number };
 
 /** Atomic increment (single upsert statement). */
 export async function meter(db: DB, appId: string, m: Meter, p = period()): Promise<UsageRow> {
-  const v = { text: m.text ?? 0, voice: m.voice ?? 0, calls: m.modelCalls ?? 0, ti: m.tokensIn ?? 0, to: m.tokensOut ?? 0, cost: m.costMicros ?? 0 };
+  const v = { text: m.text ?? 0, voice: m.voice ?? 0, tool: m.tool ?? 0, calls: m.modelCalls ?? 0, ti: m.tokensIn ?? 0, to: m.tokensOut ?? 0, cost: m.costMicros ?? 0 };
   const [row] = await db.insert(usage)
-    .values({ appId, period: p, textIntents: v.text, voiceTurns: v.voice, modelCalls: v.calls, tokensIn: v.ti, tokensOut: v.to, costMicros: v.cost })
+    .values({ appId, period: p, textIntents: v.text, voiceTurns: v.voice, toolTurns: v.tool, modelCalls: v.calls, tokensIn: v.ti, tokensOut: v.to, costMicros: v.cost })
     .onConflictDoUpdate({
       target: [usage.appId, usage.period],
       set: {
         textIntents: sql`${usage.textIntents} + ${v.text}`,
         voiceTurns: sql`${usage.voiceTurns} + ${v.voice}`,
+        toolTurns: sql`${usage.toolTurns} + ${v.tool}`,
         modelCalls: sql`${usage.modelCalls} + ${v.calls}`,
         tokensIn: sql`${usage.tokensIn} + ${v.ti}`,
         tokensOut: sql`${usage.tokensOut} + ${v.to}`,

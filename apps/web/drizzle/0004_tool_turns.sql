@@ -1,0 +1,1 @@
+ALTER TABLE "usage" ADD COLUMN "tool_turns" integer DEFAULT 0 NOT NULL;

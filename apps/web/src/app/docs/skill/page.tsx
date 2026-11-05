@@ -12,7 +12,7 @@ export default function SkillFormat() {
       <pre>{`{
   "entoli": "0.1",
   "app": { "name": "Fieldnotes" },
-  "layer": "L2",                       // L1 Control · L2 Integrated (settings by voice, with a yes)
+  "layer": "L1",                       // default for every act: L1 the device answers · L2 Entoli AI answers
   "mode": "voice",                     // text · voice
   "map": [                             // screens and controls, for the dashboard and the tester
     { "id": "notes", "kind": "screen", "title": "Notes", "path": "/" },
@@ -36,7 +36,8 @@ export default function SkillFormat() {
         <tr><td><code>undo</code></td><td>The app can take it back. Without an undo function in code, it never runs on silence.</td></tr>
         <tr><td><code>exact</code></td><td>Show every argument; the yes is bound to exactly what was shown.</td></tr>
         <tr><td><code>voiceOnly</code></td><td>Typed requests are refused.</td></tr>
-        <tr><td><code>kind</code></td><td><code>setting</code> acts need layer L2 and always need a yes.</td></tr>
+        <tr><td><code>kind</code></td><td><code>setting</code> acts always need a yes.</td></tr>
+        <tr><td><code>layer</code></td><td><code>L2</code> Entoli AI may answer and pick it, <code>L1</code> device only, <code>off</code> not connected. Overrides the app's layer.</td></tr>
       </tbody></table>
       <h2>Slot types (closed set)</h2>
       <table><tbody>

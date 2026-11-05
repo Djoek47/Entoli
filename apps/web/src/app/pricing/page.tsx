@@ -1,5 +1,5 @@
 import { DocsNav, Page } from '@/components/Page';
-import { MANAGED_SETUP_FROM_USD, OVERAGE_PER_1000, PLANS } from '@/lib/plans';
+import { MANAGED_SETUP_FROM_USD, planFeatures, PLANS } from '@/lib/plans';
 
 export const metadata = { title: 'Pricing' };
 
@@ -7,19 +7,16 @@ export default function Pricing() {
   return (
     <Page>
       <div className="kicker" style={{ marginTop: 24 }}>Pricing</div>
-      <h1>Pay for the depth and the voice</h1>
+      <h1>Buy the skill, or the skill and the integration</h1>
       <DocsNav at="/pricing" />
-      <p>Per app, per month. Text intents are cheap because most resolve on the device and never reach us; only the phrases sent to Entoli count. Voice is metered per spoken turn.</p>
+      <p>Per app, per month. <strong>L1</strong> is the skill: your app answers on the device (Layer 1), and if you already work with Claude Code, Cursor or another coding agent, you export the skill to it and it does the wiring. <strong>L2</strong> adds the integration: Entoli's AI answers your users (Layer 2), and you integrate your app by connecting GitHub and speaking to the dashboard. The product demonstrates itself.</p>
       <div className="grid">
         {Object.values(PLANS).map((p) => (
           <div key={p.id} className="card stack">
             <h3 style={{ margin: 0 }}>{p.name}</h3>
             <div className="mono">{p.priceUsd ? `$${p.priceUsd} / app / month` : '$0'}</div>
             <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
-              <li>{p.includedText.toLocaleString()} text intents a month{p.hardLimit ? '' : `, then $${OVERAGE_PER_1000} per 1,000`}</li>
-              <li>{p.voicePerTurn ? `Voice $${p.voicePerTurn} per turn` : 'Text only'}</li>
-              <li>{p.layers.join(' + ')}{p.id === 'developer' ? ', 1 app' : ''}</li>
-              {p.id !== 'developer' ? <li>Guided integration (pull request)</li> : null}
+              {planFeatures(p).map((f) => <li key={f}>{f}</li>)}
             </ul>
           </div>
         ))}
