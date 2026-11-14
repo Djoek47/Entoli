@@ -173,5 +173,18 @@ ANTHROPIC_API_KEY=... node packages/analyzer/bin/entoli.mjs analyze ./my-app
 
 **Not verified here**: the AI replies (no model key in this environment; the L2 path ran on its device fallback, and the AI path is covered by tests with a stand-in model).
 
+## Voice tool, step 1 — always-on voice conversation — done (provider not run live)
+
+Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions recorded, acceptance test per step). Step 1 is built.
+
+**Real**
+- SDK: `startLive(entoli, provider)` bridges spoken transcripts into `entoli.hear`, so the commit contract is unchanged: a spoken "yes" confirms the "Do exactly this" card that was just read out, a held action's outcome is spoken when it lands, talking over the reply interrupts it, mute stops listening and speaking, idle (5 min) and session (30 min) caps. `spokenFor` decides what each card sounds like.
+- Providers: `openaiRealtime` (WebRTC, short-lived key; the model is created with auto-replies off, so it only says what Entoli tells it) and `browserLive` (continuous browser recognition, no account).
+- Server: `POST /api/voice/session` (L2 only, owner only, monthly live minutes `VOICE_LIVE_MINUTES` default 120, mints the short-lived key; the real key never reaches the browser), `POST /api/voice/heartbeat` (meters live seconds, a single claim capped, rate-limited, tells the client to stop at zero). Usage tab shows live minutes.
+- Dashboard: an orb in the dock (off / connecting / listening / speaking / muted), one click on, one click off, a real mute, minutes left. Off by default: typing and one-at-a-time instructions stay the normal way.
+- Tests: SDK 57, web 62 (+ the earlier suites). Browser: the orb loads, the session route answers, and with no provider key it falls back to browser recognition and says so.
+
+**Not verified**: the OpenAI Realtime calls (client secret, WebRTC `/v1/realtime/calls`, event names) follow the documented API but were never run here (no key). Expect small fixes on the first live run. ElevenLabs is not built; the interface is ready for it.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

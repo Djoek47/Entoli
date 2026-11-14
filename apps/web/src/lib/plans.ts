@@ -23,6 +23,8 @@ export type Plan = {
   layers: ('L1' | 'L2')[];
   /** Voice-tool turns a month in the dashboard (integrate by speaking). 0: not included. */
   voiceToolTurns: number;
+  /** Always-on voice conversation in the dashboard, minutes a month. 0: not included. */
+  liveMinutes: number;
   /** AI-written integration pull request. */
   integration: boolean;
   /** Hard stop when the included intents run out (no overage billing). */
@@ -33,9 +35,9 @@ export type Plan = {
 };
 
 export const PLANS: Record<PlanId, Plan> = {
-  developer: { id: 'developer', name: 'Developer', priceUsd: 0, ai: false, includedText: 0, voicePerTurn: null, layers: ['L1'], voiceToolTurns: 0, integration: false, hardLimit: true, voiceInput: false, maxApps: 1 },
-  l1: { id: 'l1', name: 'L1 Skill', priceUsd: 49, ai: false, includedText: 0, voicePerTurn: null, layers: ['L1'], voiceToolTurns: 0, integration: false, hardLimit: true, voiceInput: true },
-  l2: { id: 'l2', name: 'L2 Skill + integration', priceUsd: 299, ai: true, includedText: 100_000, voicePerTurn: 0.015, layers: ['L1', 'L2'], voiceToolTurns: Number(process.env.VOICE_TOOL_TURNS ?? 300), integration: true, hardLimit: false, voiceInput: true },
+  developer: { id: 'developer', name: 'Developer', priceUsd: 0, ai: false, includedText: 0, voicePerTurn: null, layers: ['L1'], voiceToolTurns: 0, liveMinutes: 0, integration: false, hardLimit: true, voiceInput: false, maxApps: 1 },
+  l1: { id: 'l1', name: 'L1 Skill', priceUsd: 49, ai: false, includedText: 0, voicePerTurn: null, layers: ['L1'], voiceToolTurns: 0, liveMinutes: 0, integration: false, hardLimit: true, voiceInput: true },
+  l2: { id: 'l2', name: 'L2 Skill + integration', priceUsd: 299, ai: true, includedText: 100_000, voicePerTurn: 0.015, layers: ['L1', 'L2'], voiceToolTurns: Number(process.env.VOICE_TOOL_TURNS ?? 300), liveMinutes: Number(process.env.VOICE_LIVE_MINUTES ?? 120), integration: true, hardLimit: false, voiceInput: true },
 };
 
 /** Extra text intents beyond the plan, USD per 1,000. */
@@ -70,6 +72,7 @@ export function planFeatures(p: Plan): string[] {
     `Layer 2: Entoli AI answers your users, ${p.includedText.toLocaleString()} intents a month, then $${OVERAGE_PER_1000} per 1,000`,
     `AI voice turns $${p.voicePerTurn} each`,
     `Voice tool: integrate your app by speaking to the dashboard (${p.voiceToolTurns} turns a month)`,
+    `Always-on voice conversation, ${p.liveMinutes} minutes a month (or send instructions one at a time)`,
     'Integration delivered as one pull request you approve',
     'Choose Layer 1, Layer 2 or off for each feature',
   ];

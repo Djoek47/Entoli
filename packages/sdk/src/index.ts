@@ -13,3 +13,7 @@ export {
 export { answerFrom, isKnowledgeQuestion, NO_KNOWLEDGE } from './knowledge.js';
 export { renderStage, CSS, type StageOptions, type StageHandle } from './stage.js';
 export { webSpeech, type SpeechProvider } from './voice.js';
+export {
+  startLive, spokenFor, openaiRealtime, browserLive,
+  type LiveProvider, type LiveHandlers, type LiveState, type LiveOptions, type LiveSession, type RealtimeSecret, type OpenAIRealtimeDeps,
+} from './live.js';

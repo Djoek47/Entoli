@@ -58,6 +58,8 @@ export const usage = pgTable('usage', {
   modelCalls: integer('model_calls').notNull().default(0),
   /** Voice-tool turns in the dashboard (L2 plan quota). */
   toolTurns: integer('tool_turns').notNull().default(0),
+  /** Always-on voice conversation, seconds (L2 plan quota). */
+  liveSeconds: integer('live_seconds').notNull().default(0),
   tokensIn: bigint('tokens_in', { mode: 'number' }).notNull().default(0),
   tokensOut: bigint('tokens_out', { mode: 'number' }).notNull().default(0),
   /** Our model cost, in micro-dollars. */

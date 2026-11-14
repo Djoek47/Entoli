@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { changeStatusAction, openPrAction, publishSkillAction, setActLayerAction, startAnalysisAction, startIntegrationAction } from '../../actions';
 import { pickFeatures, STUDIO_SKILL } from '@/lib/studio-skill';
+import { LiveOrb } from './LiveOrb';
 
 export type StudioProps = {
   appId: string;
@@ -15,6 +16,8 @@ export type StudioProps = {
   repo: string | null;
   voiceTool: boolean;
   voiceInput: boolean;
+  liveMinutes: number;
+  liveUsedSeconds: number;
   quota: number;
   used: number;
   acts: { name: string; title: string; layer: string }[];
@@ -109,6 +112,7 @@ export function StudioBar(props: StudioProps) {
       layer: props.voiceTool ? 'L2' : 'L1',
       mode: props.voiceInput ? 'voice' : 'text',
       fonts: false,
+      speak: false, // spoken replies come from the live conversation, when it is on
       placeholder: props.voiceTool ? 'Speak or type: "analyze my repo", "integrate everything by voice"…' : 'Type: "go to map", "analyze"…',
       ...(resolver ? { resolver } : {}),
     });
@@ -121,6 +125,7 @@ export function StudioBar(props: StudioProps) {
   return (
     <div className="studio-dock" aria-label="Entoli for this dashboard">
       <div ref={el} />
+      <LiveOrb appId={props.appId} enabled={props.liveMinutes > 0 && props.voiceTool} minutes={props.liveMinutes} usedSeconds={props.liveUsedSeconds} />
       <div className="studio-hint">{props.voiceTool ? `Voice tool · Layer 2 · ${props.used}/${props.quota} turns this month` : 'Layer 1 · the device answers · the voice tool is part of L2'}</div>
     </div>
   );

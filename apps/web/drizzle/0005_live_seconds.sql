@@ -1,0 +1,1 @@
+ALTER TABLE "usage" ADD COLUMN "live_seconds" integer DEFAULT 0 NOT NULL;

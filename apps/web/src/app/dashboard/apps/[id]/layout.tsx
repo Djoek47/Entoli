@@ -26,6 +26,8 @@ export default async function AppLayout({ children, params }: { children: React.
         repo={app.repo}
         voiceTool={voiceTool}
         voiceInput={plan.voiceInput}
+        liveMinutes={plan.liveMinutes}
+        liveUsedSeconds={usage.liveSeconds}
         quota={plan.voiceToolTurns}
         used={usage.toolTurns}
         acts={(skill?.acts ?? []).map((a) => ({ name: a.name, title: a.title ?? a.name, layer: actLayer(skill!, a) }))}
