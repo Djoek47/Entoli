@@ -38,7 +38,7 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 - Apps that need a database or secrets run with mocks or "partially runs" is stated plainly.
 - Done when: apply changes → sandbox boots → the window answers a typed and a spoken phrase → coverage appears in the Test tab, without leaving the dashboard.
 
-### 4. Design-system extractor
+### 4. Design-system extractor (DONE)
 - Read tokens from the code (CSS variables, Tailwind config, theme files, font imports), screenshot the running app (sandbox) and sample real computed styles; produce one token set (colours, fonts, radius, spacing, shadows).
 - Apply it to the Entoli bar and card (`entoli.theme.css`, already generated for the Next/Vite bootstraps), preview it in the sandbox windows, adjustable by voice ("rounder", "use our blue").
 - Done when: on three fixture apps (plain CSS variables, Tailwind, CSS-in-JS) the extracted tokens match the app and the bar visibly matches in a screenshot comparison.
@@ -74,8 +74,8 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 | 1 | Always-on voice | nothing | done |
 | 2 | MCP server and guardrails | the skill and the approve-one-by-one flow | done |
 | 3 | Test sandbox windows | steps 1-2 (the agent's changes are what gets booted) | done |
-| 4 | Design-system extractor | step 3 (it screenshots the running app in the sandbox) | now |
-| 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | step 4 passes its test |
+| 4 | Design-system extractor | step 3 (it looks at the running app in the sandbox) | done |
+| 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | now |
 | 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | step 5 passes its test |
 | 7 | Launch pass | all of the above | step 6 passes its test |
 

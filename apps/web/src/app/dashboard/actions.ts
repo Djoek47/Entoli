@@ -345,3 +345,61 @@ export async function stopSandboxAction(appId: string, sandboxId: string) {
   await stopSandbox(db, app, sandboxId);
   revalidatePath(`/dashboard/apps/${appId}/sandbox`);
 }
+
+export async function extractDesignAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { extractFromRepo, sampleFromUrl } = await import('@/lib/design');
+  const { latestSandbox } = await import('@/lib/sandbox-boot');
+  try {
+    await extractFromRepo(db, app);
+    // If a sandbox is running, also look at what people actually see.
+    const [sbx] = await latestSandbox(db, appId);
+    if (sbx?.status === 'ready' && sbx.url) await sampleFromUrl(db, (await getApp(db, user.id, appId))!, sbx.url);
+  } catch (e) { redirect(`/dashboard/apps/${appId}/design?error=${encodeURIComponent((e as Error).message.slice(0, 300))}`); }
+  revalidatePath(`/dashboard/apps/${appId}/design`);
+}
+
+export async function sampleDesignAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { sampleFromUrl } = await import('@/lib/design');
+  const { latestSandbox } = await import('@/lib/sandbox-boot');
+  try {
+    const [sbx] = await latestSandbox(db, appId);
+    const url = sbx?.status === 'ready' && sbx.url ? sbx.url : app.previewUrl;
+    if (!url) throw new Error('Start the test sandbox, or set a preview URL (Test tab), so there is a running app to look at.');
+    await sampleFromUrl(db, app, url);
+  } catch (e) { redirect(`/dashboard/apps/${appId}/design?error=${encodeURIComponent((e as Error).message.slice(0, 300))}`); }
+  revalidatePath(`/dashboard/apps/${appId}/design`);
+}
+
+export async function tweakDesignAction(appId: string, form: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { tweakDesign } = await import('@/lib/design');
+  try {
+    const r = await tweakDesign(db, app, String(form.get('instruction') ?? ''));
+    if (!r.understood) redirect(`/dashboard/apps/${appId}/design?error=${encodeURIComponent('I did not understand that. Try "rounder", "no shadow", "make the accent blue", or "use #2563eb as the accent".')}`);
+  } catch (e) {
+    if ((e as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw e;
+    redirect(`/dashboard/apps/${appId}/design?error=${encodeURIComponent((e as Error).message.slice(0, 300))}`);
+  }
+  revalidatePath(`/dashboard/apps/${appId}/design`);
+}
+
+export async function resetDesignTweaksAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { resetTweaks } = await import('@/lib/design');
+  await resetTweaks(db, app);
+  revalidatePath(`/dashboard/apps/${appId}/design`);
+}

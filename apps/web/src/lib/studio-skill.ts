@@ -1,7 +1,7 @@
 /** The dashboard's own skill (the voice tool). Client-safe: no server imports. */
 import { validateSkill, type Skill } from '@entoli/sdk/skill';
 
-const TABS = ['analyze', 'map', 'knowledge', 'skill', 'keys', 'usage', 'billing', 'integrate', 'sandbox', 'test'];
+const TABS = ['analyze', 'map', 'knowledge', 'skill', 'keys', 'usage', 'billing', 'design', 'integrate', 'sandbox', 'test'];
 
 export const STUDIO_SKILL: Skill = {
   entoli: '0.1',
@@ -15,6 +15,7 @@ export const STUDIO_SKILL: Skill = {
     { topic: 'change my code without asking', can: false, answer: 'No. Nothing reaches your repository until you approve the changes and say "open the pull request".', phrases: ['push to main', 'commit directly'] },
     { topic: 'claude code cursor', can: true, answer: 'Yes. On the Skill tab, download the skill for Claude Code, Cursor or AGENTS.md; your agent can wire it.', phrases: ['coding agent', 'export the skill'] },
     { topic: 'test my app', can: true, answer: 'Yes. Say "start the sandbox": your app runs with the Entoli layer, including changes you have not approved yet, and I can check every feature.', phrases: ['sandbox', 'try it first'] },
+    { topic: 'match my design', can: true, answer: 'Yes. Say "match my design": I read your CSS, Tailwind and theme files, and your running app if the sandbox is up. Then say things like "rounder" or "make the accent blue".', phrases: ['design system', 'theme', 'colours', 'fonts'] },
     { topic: 'layer', can: true, answer: 'Yes. Say "set search to layer one" or "turn email off". L2: the AI answers. L1: device only. Off: not connected.', phrases: ['layers', 'per feature'] },
   ],
   acts: [
@@ -31,6 +32,9 @@ export const STUDIO_SKILL: Skill = {
       } },
     { name: 'studio.sandbox', title: 'Start the test sandbox', phrases: ['start the sandbox', 'test my app', 'boot the sandbox', 'let me try it'], radius: 'self', slots: {} },
     { name: 'studio.checks', title: 'Run the checks', phrases: ['run the checks', 'check it', 'test the phrases', 'try every feature'], radius: 'self', slots: {} },
+    { name: 'studio.design', title: 'Match my design', phrases: ['match my design', 'extract my design', 'read my design', 'use my colours'], radius: 'self', slots: {} },
+    { name: 'studio.tweak', title: 'Adjust the design', phrases: ['make it', 'adjust the design', 'change the design'], radius: 'self', undo: true,
+      slots: { instruction: { type: 'freeText', required: true, label: 'What to change', prompt: 'What should change? For example: rounder, no shadow, make the accent blue.' } } },
     { name: 'studio.approve', title: 'Approve a change', phrases: ['approve', 'accept', 'keep'], radius: 'self', undo: true,
       slots: { change: { type: 'choice', required: true, label: 'Change', prompt: 'Which change?' } } },
     { name: 'studio.reject', title: 'Reject a change', phrases: ['reject', 'drop', 'discard'], radius: 'self', undo: true,

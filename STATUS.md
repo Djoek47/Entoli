@@ -211,5 +211,20 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 
 **Not verified here**: the Vercel Sandbox provider (written against the v4 types; no credentials here), and apps that need a database or secrets (they run only as far as they can; the log says where they stop). Monorepo sub-apps (no root package.json) are not started yet: a later addition.
 
+## Voice tool, step 4 — design-system extractor — done
+
+**Real**
+- New package `@entoli/design`: colour maths (hex/rgb/hsl/shadcn triples, WCAG contrast), **static** extraction, **runtime** sampling, merge, tweak, theme generation.
+- Static: CSS/SCSS custom properties in `:root` and in dark selectors (`.dark`, `[data-theme=dark]`, `prefers-color-scheme`), body declarations, radii on cards/buttons, `@font-face`; Tailwind config (colours incl. `hsl(var(--x))`, fontFamily, borderRadius); theme objects (MUI `createTheme` palette/typography/shape, Chakra `extendTheme`, any `colors`/`fonts`/`radii`); styled-components/emotion global styles; Google Fonts links. Each value records where it came from.
+- Runtime: computed styles from the real running page (page and text colours, the first vivid filled button as the accent, secondary text, input/card borders, heading/code fonts, median radius, card shadow). The running app wins over the code for what people see; the code is the only source for dark mode.
+- Colours the app does not define are derived from the ones it does (a dark app gets a dark card and readable muted text); translucent colours are blended over the background of their own mode (a bug found by looking at this repo's own dark mode).
+- The SDK now exposes theme variables (`--e-font`, `--e-font-display`, `--e-font-mono`, `--e-radius`, `--e-on-accent`, `--e-shadow-exact` plus the colour ones) with zero-specificity defaults, so a theme wins whatever order stylesheets load in (a bug the browser test caught).
+- Proof in a real browser: sampled from a styled page, the **real Entoli bar and card** take the app's background, radius, ink, heading font, accent, readable button text and hard shadow.
+- Dashboard **Design** tab (L2): extract from the repo, look at the running app/sandbox, live light and dark previews drawn by the real stylesheet, a table of every token and where it came from, adjust in plain words ("rounder", "no shadow", "make the accent blue", "use #2563eb as the accent"), undo all. Tweaks are replayed on top, so re-extracting keeps them. Voice acts: "match my design", "make it rounder".
+- Used downstream: the integration's `entoli.theme.css` follows the extracted design (unless the developer picked Entoli's own look), and the MCP server gives the developer's agent `get_design_tokens` (tokens plus ready theme CSS).
+- Tests: 13 in the package (3 kinds of app, colour, merge/derive/tweak/theme, real-Chromium sampling and themed bar) and 5 in the web app.
+
+**Not done on purpose**: no screenshot-diff image comparison (computed-style assertions on the real page are stricter and not flaky); font files are not downloaded (the stack is kept, and Google Fonts are loaded by the app itself).
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

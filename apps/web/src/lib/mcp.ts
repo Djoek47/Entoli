@@ -24,6 +24,8 @@ import { gh, installationToken } from './github';
 import { blobSha, latestSources } from './integration';
 import { generateMcpToken, hashKey, keyPrefix, looksLikeMcpToken } from './keys';
 import { PLANS } from './plans';
+import { describeTokens, themeCss as themeCssFromTokens } from '@entoli/design';
+import { tokensOf } from './design';
 import { hit } from './ratelimit';
 
 type AppRow = typeof apps.$inferSelect;
@@ -124,6 +126,7 @@ const TOOLS = [
   { name: 'get_guardrails', description: 'The rules you must stay within and the exact list of files you may submit changes for.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'list_acts_to_wire', description: 'Acts the developer exposed, with where each lives in the code and its current status (todo, started, wired, blocked) and any submitted change.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'get_instructions', description: 'Exact wiring instructions (Markdown) for this app: how to mount the bar, and one useEntoli snippet per act with its contract. Optionally only for some acts.', inputSchema: { type: 'object', properties: { acts: { type: 'array', items: { type: 'string' }, description: 'Act names. Omit for all.' } }, additionalProperties: false } },
+  { name: 'get_design_tokens', description: 'The app\'s design system as Entoli extracted it from the code and the running app (colours, fonts, radius, shadow, dark mode), and the ready-made theme CSS for the Entoli bar and card. Use it so what you write looks native; do not invent styles.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
   { name: 'report_progress', description: 'Tell the developer what you are doing. Shown in the dashboard and spoken in the voice conversation.', inputSchema: { type: 'object', required: ['status'], properties: { act: { type: 'string' }, status: { type: 'string', enum: ['started', 'wired', 'blocked'] }, note: { type: 'string', maxLength: 500 } }, additionalProperties: false } },
   { name: 'submit_change', description: 'Propose a complete new version of one file. It is checked against the guardrails, then waits for the developer\'s approval; it is never written to the repository directly. Submit the same file again to revise it.', inputSchema: { type: 'object', required: ['file', 'content', 'summary'], properties: { file: { type: 'string', description: 'Repository-relative path' }, content: { type: 'string', description: 'The complete new file content' }, summary: { type: 'string', maxLength: 300 }, act: { type: 'string', description: 'The act this change wires, if one' } }, additionalProperties: false } },
   { name: 'get_change_status', description: 'Status of every change you submitted: pending, approved or rejected by the developer, and the pull request when opened.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } },
@@ -170,6 +173,12 @@ async function callTool(db: DB, app: AppRow, name: string, args: Record<string, 
           submittedChanges: changes.filter((c) => files.includes(c.file)).map((c) => ({ file: c.file, status: c.status })),
         };
       }));
+    }
+
+    case 'get_design_tokens': {
+      const tokens = tokensOf(app.design as never);
+      if (!tokens) return text('No design system has been extracted yet. Ask the developer to extract it in the dashboard (Design tab), or say "match my design" in the voice tool.', true);
+      return json({ summary: describeTokens(tokens), tokens, themeCss: themeCssFromTokens(tokens), howToUse: 'Save themeCss as entoli.theme.css (submit_change allows it) and import it where the bar is mounted. The bar and card follow these tokens; no other styling is needed.' });
     }
 
     case 'get_instructions': {

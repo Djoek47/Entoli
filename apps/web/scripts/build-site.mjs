@@ -22,6 +22,10 @@ const analyzer = join(root, 'packages', 'analyzer');
 if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(analyzer, 'dist', 'index.js'))) {
   execSync('pnpm run build', { cwd: analyzer, stdio: 'inherit' });
 }
+const design = join(root, 'packages', 'design');
+if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(design, 'dist', 'index.js'))) {
+  execSync('pnpm run build', { cwd: design, stdio: 'inherit' });
+}
 const tester = join(root, 'packages', 'tester');
 if (!process.env.ENTOLI_SKIP_SDK_BUILD || !existsSync(join(tester, 'dist', 'index.js'))) {
   execSync('pnpm run build', { cwd: tester, stdio: 'inherit' });

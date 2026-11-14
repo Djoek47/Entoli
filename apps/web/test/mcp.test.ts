@@ -63,7 +63,7 @@ describe('a real MCP client (the official SDK) talking to Entoli', () => {
     expect(client.getServerVersion()).toMatchObject({ name: 'entoli' });
     expect(client.getInstructions()).toMatch(/Nothing is written to the repository by you/);
     const tools = (await client.listTools()).tools.map((t) => t.name);
-    expect(tools).toEqual(['get_skill', 'get_guardrails', 'list_acts_to_wire', 'get_instructions', 'report_progress', 'submit_change', 'get_change_status']);
+    expect(tools).toEqual(['get_skill', 'get_guardrails', 'list_acts_to_wire', 'get_instructions', 'get_design_tokens', 'report_progress', 'submit_change', 'get_change_status']);
 
     const todo = JSON.parse((await call(client, 'list_acts_to_wire')).text) as { act: string; status: string; where: { file: string }[] }[];
     expect(todo.find((a) => a.act === 'note.create')).toMatchObject({ status: 'todo', where: [{ file: 'src/App.tsx' }] });

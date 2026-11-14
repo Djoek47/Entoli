@@ -24,6 +24,8 @@ import { analyses, integrations, type IntegrationChange } from '@/db/schema';
 import { skillOf } from './apps';
 import { gh, installationToken } from './github';
 import { PLANS } from './plans';
+import { themeCss as themeCssFromTokens } from '@entoli/design';
+import { tokensOf } from './design';
 
 export type Answers = {
   features: string[];
@@ -266,7 +268,7 @@ export async function latestSources(db: DB, appId: string) {
   return a?.sources ?? {};
 }
 
-type AppRow = { id: string; plan: keyof typeof PLANS; skill: unknown; repo: string | null; installationId: string | null };
+type AppRow = { id: string; plan: keyof typeof PLANS; skill: unknown; repo: string | null; installationId: string | null; design?: unknown };
 
 export function integrationAllowed(app: AppRow): string | null {
   if (!PLANS[app.plan].integration) return 'Integration (by voice, or by answering a few questions) is part of the L2 plan. On L1, export the skill to your coding agent instead (Skill tab).';
@@ -321,7 +323,9 @@ export async function generateIntegration(db: DB, app: AppRow, integrationId: st
     const appCssPath = ['src/index.css', 'src/styles.css', 'src/App.css', 'app/globals.css', 'src/app/globals.css', 'styles/globals.css'].map((p) => posix.join(layout.pkgDir, p));
     let appCss: string | null = null;
     for (const p of appCssPath) { appCss = await deps.files.read(p); if (appCss) break; }
-    const css = themeCss(answers.design, appCss);
+    // The extracted design system (from the code and the running app, plus the developer's tweaks) beats a guess from one CSS file.
+    const tokens = answers.design === 'entoli' ? null : tokensOf(app.design as never);
+    const css = tokens ? themeCssFromTokens(tokens) : themeCss(answers.design, appCss);
     if (css) {
       themePath = posix.join(layout.srcDir || layout.pkgDir, 'entoli.theme.css');
       add('Theme the Entoli bar to match the app', themePath, await deps.files.read(themePath), css);

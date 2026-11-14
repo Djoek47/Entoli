@@ -14,13 +14,21 @@ import type { SpeechProvider } from './voice.js';
 
 const FONTS = 'https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap';
 
+/**
+ * Theme variables (all optional; the defaults are Entoli's brand): --e-ink, --e-paper,
+ * --e-lime (accent), --e-lime-text, --e-on-accent, --e-line, --e-muted, --e-warn,
+ * --e-font, --e-font-display, --e-font-mono, --e-radius, --e-shadow-exact.
+ * @entoli/design generates them from your app's own design system.
+ */
 export const CSS = `
-.entoli{--e-ink:#0E0F0C;--e-paper:#FAFAF7;--e-lime:#A6E01C;--e-lime-text:#4F7A00;--e-line:rgba(14,15,12,.12);--e-muted:rgba(14,15,12,.6);--e-warn:#B42318;
-font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--e-ink);font-size:15px;line-height:1.45;max-width:640px;width:100%;box-sizing:border-box}
+:where(.entoli){--e-ink:#0E0F0C;--e-paper:#FAFAF7;--e-lime:#A6E01C;--e-lime-text:#4F7A00;--e-line:rgba(14,15,12,.12);--e-muted:rgba(14,15,12,.6);--e-warn:#B42318}
+/* the defaults above have no specificity, so a theme wins whatever order the stylesheets load in */
+.entoli{
+font-family:var(--e-font,'Hanken Grotesk',system-ui,sans-serif);color:var(--e-ink);font-size:15px;line-height:1.45;max-width:640px;width:100%;box-sizing:border-box}
 .entoli *{box-sizing:border-box}
-.entoli-bar{display:flex;align-items:center;gap:8px;background:var(--e-paper);border:1.5px solid var(--e-ink);border-radius:14px;padding:6px 6px 6px 14px}
+.entoli-bar{display:flex;align-items:center;gap:8px;background:var(--e-paper);border:1.5px solid var(--e-ink);border-radius:var(--e-radius,14px);padding:6px 6px 6px 14px}
 .entoli-bar:focus-within{box-shadow:0 0 0 3px var(--e-lime)}
-.entoli-mark{font-family:'JetBrains Mono',monospace;font-weight:500;display:inline-flex;align-items:center;gap:2px;user-select:none}
+.entoli-mark{font-family:var(--e-font-mono,'JetBrains Mono',monospace);font-weight:500;display:inline-flex;align-items:center;gap:2px;user-select:none}
 .entoli-wave{display:inline-flex;align-items:center;gap:2px;height:14px}
 .entoli-wave i{display:block;width:3px;border-radius:2px;background:var(--e-lime);height:6px}
 .entoli-wave i:nth-child(2){height:12px}.entoli-wave i:nth-child(3){height:9px}
@@ -28,32 +36,32 @@ font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--e-ink);font-size:1
 .entoli.listening .entoli-wave i:nth-child(2){animation-delay:.15s}.entoli.listening .entoli-wave i:nth-child(3){animation-delay:.3s}
 @keyframes entoli-w{from{transform:scaleY(.4)}to{transform:scaleY(1.2)}}
 .entoli-input{flex:1;min-width:0;border:0;background:transparent;font:inherit;color:inherit;padding:8px 4px;outline:none}
-.entoli-btn{font:600 14px 'Hanken Grotesk',system-ui,sans-serif;border-radius:10px;border:1.5px solid var(--e-ink);background:var(--e-paper);color:var(--e-ink);padding:8px 14px;cursor:pointer;min-height:40px}
+.entoli-btn{font:600 14px var(--e-font,'Hanken Grotesk',system-ui,sans-serif);border-radius:calc(var(--e-radius,14px) * .7);border:1.5px solid var(--e-ink);background:var(--e-paper);color:var(--e-ink);padding:8px 14px;cursor:pointer;min-height:40px}
 .entoli-btn:focus-visible{outline:3px solid var(--e-lime);outline-offset:2px}
 .entoli-btn.primary{background:var(--e-ink);color:var(--e-paper)}
-.entoli-btn.go{background:var(--e-lime);border-color:var(--e-ink)}
+.entoli-btn.go{background:var(--e-lime);color:var(--e-on-accent,#0E0F0C);border-color:var(--e-ink)}
 .entoli-btn.ghost{border-color:transparent;background:transparent;text-decoration:underline}
 .entoli-mic{width:40px;padding:0;display:inline-flex;align-items:center;justify-content:center}
 .entoli-said{display:inline-block;margin:12px 0 6px;padding:4px 12px;background:var(--e-paper);border:1px solid var(--e-line);border-radius:999px;color:var(--e-muted);font-size:14px}
 .entoli-said q{color:var(--e-ink);font-style:normal}
-.entoli-reply{margin:0 0 8px;padding:8px 12px;border-left:3px solid var(--e-lime);background:var(--e-paper);border-radius:0 10px 10px 0;font-size:15px}
-.entoli-card{background:var(--e-paper);border:1.5px solid var(--e-ink);border-radius:16px;padding:16px;position:relative;overflow:hidden}
-.entoli-kicker{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--e-muted)}
+.entoli-reply{margin:0 0 8px;padding:8px 12px;border-left:3px solid var(--e-lime);background:var(--e-paper);border-radius:0 calc(var(--e-radius,14px) * .7) calc(var(--e-radius,14px) * .7) 0;font-size:15px}
+.entoli-card{background:var(--e-paper);border:1.5px solid var(--e-ink);border-radius:calc(var(--e-radius,14px) * 1.15);padding:16px;position:relative;overflow:hidden}
+.entoli-kicker{font:500 11px var(--e-font-mono,'JetBrains Mono',monospace);letter-spacing:.08em;text-transform:uppercase;color:var(--e-muted)}
 .entoli-kicker b{color:var(--e-lime-text);font-weight:500}
-.entoli-title{font:600 20px 'Sora',system-ui,sans-serif;margin:4px 0 8px;letter-spacing:-.01em}
+.entoli-title{font:600 20px var(--e-font-display,'Sora',system-ui,sans-serif);margin:4px 0 8px;letter-spacing:-.01em}
 .entoli-args{list-style:none;margin:8px 0;padding:0;border-top:1px solid var(--e-line)}
 .entoli-args li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--e-line)}
 .entoli-args span{color:var(--e-muted)}
-.entoli-args code{font-family:'JetBrains Mono',monospace;font-size:13px;word-break:break-all;text-align:right}
+.entoli-args code{font-family:var(--e-font-mono,'JetBrains Mono',monospace);font-size:13px;word-break:break-all;text-align:right}
 .entoli-why{font-size:13px;color:var(--e-muted);margin:6px 0 0}
 .entoli-msg{margin:4px 0}
 .entoli-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .entoli-hold{position:absolute;left:0;bottom:0;height:4px;background:var(--e-lime);width:0}
 .entoli-hold.run{transition-property:width;transition-timing-function:linear;width:100%}
-.entoli-card.exact{border-width:2px;box-shadow:4px 4px 0 var(--e-ink)}
+.entoli-card.exact{border-width:2px;box-shadow:var(--e-shadow-exact,4px 4px 0 var(--e-ink))}
 .entoli-card.blocked,.entoli-card.error{border-color:var(--e-warn)}
 .entoli-receipts{list-style:none;margin:12px 0 0;padding:0;font-size:13px;color:var(--e-ink)}
-.entoli-receipts:not(:empty){background:var(--e-paper);border:1px solid var(--e-line);border-radius:12px;padding:0 10px}
+.entoli-receipts:not(:empty){background:var(--e-paper);border:1px solid var(--e-line);border-radius:calc(var(--e-radius,14px) * .85);padding:0 10px}
 .entoli-receipts li:first-child{border-top:0}
 .entoli-receipts li{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 2px;border-top:1px dashed var(--e-line)}
 .entoli-receipts li.undone{color:var(--e-muted);text-decoration:line-through}

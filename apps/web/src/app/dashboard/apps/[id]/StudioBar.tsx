@@ -6,7 +6,7 @@
 import { defineAct, mount, type Mounted, type RemoteChoice } from '@entoli/sdk';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
+import { extractDesignAction, resetDesignTweaksAction, tweakDesignAction, changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
 import { pickFeatures, STUDIO_SKILL } from '@/lib/studio-skill';
 import { LiveOrb } from './LiveOrb';
 
@@ -68,6 +68,10 @@ export function StudioBar(props: StudioProps) {
         const id = p().sandboxId; if (!id) throw new Error('Start the test sandbox first.');
         await runChecksAction(props.appId, id);
       }, { describe: () => 'Ran the checks' }),
+      defineAct('studio.design', {}, async () => { await extractDesignAction(props.appId); }, { describe: () => 'Extracted your design system' }),
+      defineAct('studio.tweak', { instruction: 'freeText' }, async ({ instruction }) => {
+        await tweakDesignAction(props.appId, form({ instruction: String(instruction) })); refresh();
+      }, { undo: async () => { await resetDesignTweaksAction(props.appId); refresh(); }, describe: ({ instruction }) => `Design: ${String(instruction)}` }),
       defineAct('studio.approve', { change: { type: 'choice', options: changeOptions } }, async ({ change }) => {
         const i = p().integration; if (!i) throw new Error('No prepared changes yet.');
         await changeStatusAction(props.appId, i.id, String(change), 'approved'); refresh(); return change;
