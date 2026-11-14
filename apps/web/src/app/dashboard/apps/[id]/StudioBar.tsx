@@ -6,7 +6,7 @@
 import { defineAct, mount, type Mounted, type RemoteChoice } from '@entoli/sdk';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { changeStatusAction, openPrAction, publishSkillAction, setActLayerAction, startAnalysisAction, startIntegrationAction } from '../../actions';
+import { changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
 import { pickFeatures, STUDIO_SKILL } from '@/lib/studio-skill';
 import { LiveOrb } from './LiveOrb';
 
@@ -21,6 +21,7 @@ export type StudioProps = {
   quota: number;
   used: number;
   acts: { name: string; title: string; layer: string }[];
+  sandboxId: string | null;
   integration: { id: string; changes: { id: string; title: string; file: string; status: string }[] } | null;
 };
 
@@ -62,6 +63,11 @@ export function StudioBar(props: StudioProps) {
         },
         describe: (s) => `Preparing the integration: ${String(s.features).split(',').length} features`,
       }),
+      defineAct('studio.sandbox', {}, async () => { await startSandboxAction(props.appId); }, { describe: () => 'Starting the test sandbox' }),
+      defineAct('studio.checks', {}, async () => {
+        const id = p().sandboxId; if (!id) throw new Error('Start the test sandbox first.');
+        await runChecksAction(props.appId, id);
+      }, { describe: () => 'Ran the checks' }),
       defineAct('studio.approve', { change: { type: 'choice', options: changeOptions } }, async ({ change }) => {
         const i = p().integration; if (!i) throw new Error('No prepared changes yet.');
         await changeStatusAction(props.appId, i.id, String(change), 'approved'); refresh(); return change;

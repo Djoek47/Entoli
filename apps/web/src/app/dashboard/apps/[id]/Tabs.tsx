@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 
 export const TABS = [
   ['analyze', 'Analyze'], ['map', 'Map'], ['knowledge', 'Knowledge'], ['skill', 'Skill'], ['keys', 'Keys'],
-  ['usage', 'Usage'], ['billing', 'Billing'], ['integrate', 'Guided integration'], ['test', 'Test'],
+  ['usage', 'Usage'], ['billing', 'Billing'], ['integrate', 'Guided integration'], ['sandbox', 'Test sandbox'], ['test', 'Test'],
 ] as const;
 
 export function Tabs({ id }: { id: string }) {

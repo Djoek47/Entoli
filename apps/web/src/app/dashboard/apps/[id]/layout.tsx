@@ -4,6 +4,7 @@ import { integrations } from '@/db/schema';
 import { loadApp } from '@/lib/app-page';
 import { getUsage } from '@/lib/apps';
 import { PLANS } from '@/lib/plans';
+import { latestSandbox } from '@/lib/sandbox-boot';
 import { StudioBar } from './StudioBar';
 import { Tabs } from './Tabs';
 
@@ -12,6 +13,7 @@ export default async function AppLayout({ children, params }: { children: React.
   const plan = PLANS[app.plan];
   const [latest] = await db.select().from(integrations).where(eq(integrations.appId, app.id)).orderBy(desc(integrations.createdAt)).limit(1);
   const usage = await getUsage(db, app.id);
+  const [sbx] = await latestSandbox(db, app.id);
   const voiceTool = plan.voiceToolTurns > 0 && (process.env.NODE_ENV !== 'production' || app.subscriptionStatus === 'active' || app.subscriptionStatus === 'trialing' || app.subscriptionStatus === 'past_due');
   return (
     <div>
@@ -31,6 +33,7 @@ export default async function AppLayout({ children, params }: { children: React.
         quota={plan.voiceToolTurns}
         used={usage.toolTurns}
         acts={(skill?.acts ?? []).map((a) => ({ name: a.name, title: a.title ?? a.name, layer: actLayer(skill!, a) }))}
+        sandboxId={sbx?.status === 'ready' ? sbx.id : null}
         integration={latest && latest.status !== 'pr_opened' ? { id: latest.id, changes: latest.changes.map((c) => ({ id: c.id, title: c.title, file: c.file, status: c.status })) } : null}
       />
     </div>

@@ -93,3 +93,32 @@ describe('the Fieldnotes example, walked against its own skill', () => {
     expect(r.checked).toBeGreaterThanOrEqual(9);
   });
 });
+
+describe('checkPhrases on the real Fieldnotes app', () => {
+  it('finds every act understood and the safe ones doing their job, and flags what is not', async () => {
+    const { checkPhrases, summarizePhrases } = await import('../src/index.js');
+    const app = fileURLToPath(new URL('../../../examples/notes-app', import.meta.url));
+    execSync('npx vite build --logLevel error', { cwd: app, stdio: 'ignore' });
+    const dist = join(app, 'dist');
+    const types: Record<string, string> = { '.js': 'text/javascript', '.css': 'text/css', '.html': 'text/html' };
+    const { url, server } = await serve((p) => {
+      const file = join(dist, p);
+      if (p !== '/' && existsSync(file) && extname(file)) return { status: 200, body: readFileSync(file, 'utf8'), type: types[extname(file)] ?? 'text/plain' };
+      return { status: 200, body: readFileSync(join(dist, 'index.html'), 'utf8') };
+    });
+    servers.push(server);
+    const real = JSON.parse(readFileSync(join(app, 'entoli.skill.json'), 'utf8')) as Skill;
+    // Two extra acts the app does not wire: one that is "off" (never checked), one that is declared but not connected in code.
+    const skill = { ...real, acts: [...real.acts, { name: 'ghost.act', title: 'Ghost act', phrases: ['summon the ghost'], radius: 'self', undo: true }, { name: 'secret.off', title: 'Secret', phrases: ['secret'], radius: 'self', layer: 'off' }] } as Skill;
+    const r = await checkPhrases(skill, url, browser);
+    const by = Object.fromEntries(r.map((x) => [x.act, x]));
+    expect(by['secret.off']).toBeUndefined();
+    expect(by['ghost.act']).toMatchObject({ status: 'not-understood' });
+    expect(by['settings.email']).toMatchObject({ status: 'ok', phase: 'ask' }); // understood: it asks for the address first (typed, it is refused after that)
+    expect(by['note.create']).toMatchObject({ status: 'ok', phase: 'ask' });
+    expect(by['note.delete']).toMatchObject({ status: 'ran' }); // held, ran, undone
+    const s = summarizePhrases(r);
+    expect(s.problems.map((p) => p.act)).toEqual(['ghost.act']);
+    expect(s.checked).toBe(real.acts.length + 1);
+  });
+});

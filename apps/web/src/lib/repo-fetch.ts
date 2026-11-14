@@ -18,7 +18,8 @@ export type Fetched = { dir: string; bytes: number; cleanup(): Promise<void> };
 
 type Fetch = typeof fetch;
 
-export async function fetchRepo(repo: string, opts: { installationId?: string | null; fetch?: Fetch; maxBytes?: number } = {}): Promise<Fetched> {
+/** `all`: extract every file (not only source), for running the app in a sandbox. */
+export async function fetchRepo(repo: string, opts: { installationId?: string | null; fetch?: Fetch; maxBytes?: number; all?: boolean } = {}): Promise<Fetched> {
   if (!/^[A-Za-z0-9-]+\/[A-Za-z0-9._-]+$/.test(repo)) throw new Error(`Not a repository: ${repo}`);
   const f = opts.fetch ?? fetch;
   const max = opts.maxBytes ?? MAX_TARBALL_BYTES;
@@ -56,7 +57,9 @@ export async function fetchRepo(repo: string, opts: { installationId?: string | 
       filter: (path, entry) => {
         const type = 'type' in entry ? entry.type : entry.isDirectory() ? 'Directory' : 'File';
         if (type === 'Directory') return !SKIP.test(`${path}/`);
-        return type === 'File' && KEEP.test(path) && !SKIP.test(path);
+        if (SKIP.test(path)) return false;
+        if (opts.all) return type === 'File' && (('size' in entry ? entry.size : 0) <= 2_000_000);
+        return type === 'File' && KEEP.test(path);
       },
     });
     await rm(archive, { force: true });

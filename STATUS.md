@@ -198,5 +198,18 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 
 **Not verified**: with Claude Code or Cursor themselves (tested with the official SDK client, which they use). Base-file reads use the GitHub contents API (installation token for private repos): the live path is untested here.
 
+## Voice tool, step 3 — test sandbox windows — done (Vercel path not run live)
+
+**Real**
+- `Test sandbox` tab (L2): boots the developer's app in an isolated sandbox with the Entoli layer applied, shows it in live windows (one iframe per screen), and keeps the log, what was applied, and the checks. Start / restart / stop; one live sandbox per app; 30-minute life; rate-limited.
+- **Judge before approving**: the integration's changes that are *not rejected* are overlaid, approved and still-pending alike, and marked "waiting for you" in the tab. Rejected changes never run.
+- Providers behind one interface: **Vercel Sandbox** (`@vercel/sandbox` v4, production default) and a **local** sandbox (dev and tests only: it refuses to start in production because it would run developers' code on our machine). Stopping kills the whole process tree (found by a test: `npm run dev` had left an orphan server).
+- Stack detection: npm / pnpm / yarn, Vite / Next / plain Node; plainly says why when it cannot (no package.json at the root, no dev/start script, too large). No secrets or env from the developer's project are copied in.
+- Checks (`packages/tester`): the map walk, plus **phrase checks**: each connected act's phrase is typed into the app's real bar and the card is read: understood / ran and then undone (safe held acts only) / not understood / wrong act / failed / not checked (no bar yet). Anything that needs a yes is never confirmed. Results are shown as a table with reasons, stored, and the walk also lands in the Test tab.
+- Voice-tool acts: "start the sandbox", "run the checks"; "go to the sandbox".
+- Tests: sandbox end to end with a real fixture app, real `npm install`, real dev server and real Chromium (overlay of approved/pending/rejected, 100% walk, 2 of 3 acts good with the unwired one caught, bar-missing path, failure path, stop really stops, production refusal, path escape); phrase checks on the real Fieldnotes build; stack detection. Dashboard checked against a real GitHub download.
+
+**Not verified here**: the Vercel Sandbox provider (written against the v4 types; no credentials here), and apps that need a database or secrets (they run only as far as they can; the log says where they stop). Monorepo sub-apps (no root package.json) are not started yet: a later addition.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

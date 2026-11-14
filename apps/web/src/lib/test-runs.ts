@@ -5,7 +5,7 @@ import type { DB } from '@/db';
 import { testRuns } from '@/db/schema';
 import { skillOf } from './apps';
 
-export type StoredReport = Pick<Report, 'url' | 'coverage' | 'checked' | 'verified' | 'broken' | 'unchecked' | 'ms' | 'startedAt'> & { source: 'dashboard' | 'ci' };
+export type StoredReport = Pick<Report, 'url' | 'coverage' | 'checked' | 'verified' | 'broken' | 'unchecked' | 'ms' | 'startedAt'> & { source: 'dashboard' | 'ci' | 'sandbox' };
 
 const MAX_REPORT_BYTES = 300_000;
 

@@ -311,3 +311,37 @@ export async function revokeMcpTokenAction(appId: string, tokenId: string) {
   await revokeMcpToken(await getDb(), user.id, appId, tokenId);
   revalidatePath(`/dashboard/apps/${appId}/keys`);
 }
+
+export async function startSandboxAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { queueSandbox, bootSandbox, stopOthers } = await import('@/lib/sandbox-boot');
+  const qd = await queueSandbox(db, app);
+  if ('error' in qd) redirect(`/dashboard/apps/${appId}/sandbox?error=${encodeURIComponent(qd.error)}`);
+  const { after } = await import('next/server');
+  after(async () => { await stopOthers(db, app, qd.id); await bootSandbox(db, app, qd.id); });
+  redirect(`/dashboard/apps/${appId}/sandbox`);
+}
+
+export async function runChecksAction(appId: string, sandboxId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { runChecks } = await import('@/lib/sandbox-boot');
+  try { await runChecks(db, app, sandboxId); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/sandbox?error=${encodeURIComponent((e as Error).message.slice(0, 300))}`); }
+  revalidatePath(`/dashboard/apps/${appId}/sandbox`);
+}
+
+export async function stopSandboxAction(appId: string, sandboxId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { stopSandbox } = await import('@/lib/sandbox-boot');
+  await stopSandbox(db, app, sandboxId);
+  revalidatePath(`/dashboard/apps/${appId}/sandbox`);
+}

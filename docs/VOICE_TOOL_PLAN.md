@@ -32,7 +32,7 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 - The agent's reports and refusals appear in the Guided integration tab. Having the live conversation announce them ("your agent has wired search; approve it?") is part of step 5, when the conversation drives the whole flow.
 - Done when: a real MCP client (the SDK's test client) connects with a token, is refused out-of-scope files, and its submitted diffs appear in the Guided integration tab.
 
-### 3. Test sandbox windows
+### 3. Test sandbox windows (DONE)
 - Boot the developer's app in a Vercel Sandbox with the changes applied and the Entoli bar mounted; show it in the dashboard in an iframe (the "testable windows"), one per exposed feature or screen.
 - The tester walks the map there automatically and reports what works, what suggests the wrong thing, what does nothing; results are spoken and listed.
 - Apps that need a database or secrets run with mocks or "partially runs" is stated plainly.
@@ -73,8 +73,8 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 |---|---|---|---|
 | 1 | Always-on voice | nothing | done |
 | 2 | MCP server and guardrails | the skill and the approve-one-by-one flow | done |
-| 3 | Test sandbox windows | steps 1-2 (the agent's approved changes are what gets booted) | now |
-| 4 | Design-system extractor | step 3 (it screenshots the running app in the sandbox) | step 3 passes its test |
+| 3 | Test sandbox windows | steps 1-2 (the agent's changes are what gets booted) | done |
+| 4 | Design-system extractor | step 3 (it screenshots the running app in the sandbox) | now |
 | 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | step 4 passes its test |
 | 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | step 5 passes its test |
 | 7 | Launch pass | all of the above | step 6 passes its test |

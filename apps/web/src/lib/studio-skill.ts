@@ -1,7 +1,7 @@
 /** The dashboard's own skill (the voice tool). Client-safe: no server imports. */
 import { validateSkill, type Skill } from '@entoli/sdk/skill';
 
-const TABS = ['analyze', 'map', 'knowledge', 'skill', 'keys', 'usage', 'billing', 'integrate', 'test'];
+const TABS = ['analyze', 'map', 'knowledge', 'skill', 'keys', 'usage', 'billing', 'integrate', 'sandbox', 'test'];
 
 export const STUDIO_SKILL: Skill = {
   entoli: '0.1',
@@ -14,11 +14,12 @@ export const STUDIO_SKILL: Skill = {
     { topic: 'write code', can: true, answer: 'Yes, as a pull request. Every change is shown as a diff and goes in only if you approve it.' },
     { topic: 'change my code without asking', can: false, answer: 'No. Nothing reaches your repository until you approve the changes and say "open the pull request".', phrases: ['push to main', 'commit directly'] },
     { topic: 'claude code cursor', can: true, answer: 'Yes. On the Skill tab, download the skill for Claude Code, Cursor or AGENTS.md; your agent can wire it.', phrases: ['coding agent', 'export the skill'] },
+    { topic: 'test my app', can: true, answer: 'Yes. Say "start the sandbox": your app runs with the Entoli layer, including changes you have not approved yet, and I can check every feature.', phrases: ['sandbox', 'try it first'] },
     { topic: 'layer', can: true, answer: 'Yes. Say "set search to layer one" or "turn email off". L2: the AI answers. L1: device only. Off: not connected.', phrases: ['layers', 'per feature'] },
   ],
   acts: [
     { name: 'studio.go', title: 'Open a tab', phrases: ['go to', 'open', 'show me', 'take me to'], radius: 'self', undo: true,
-      slots: { tab: { type: 'choice', required: true, label: 'Tab', options: TABS.map((t) => ({ value: t, ...(t === 'integrate' ? { label: 'integration', aliases: ['guided integration'] } : {}), ...(t === 'test' ? { aliases: ['tests', 'tester'] } : {}) })) } } },
+      slots: { tab: { type: 'choice', required: true, label: 'Tab', options: TABS.map((t) => ({ value: t, ...(t === 'integrate' ? { label: 'integration', aliases: ['guided integration'] } : {}), ...(t === 'test' ? { aliases: ['tests', 'tester'] } : {}), ...(t === 'sandbox' ? { label: 'test sandbox', aliases: ['the sandbox', 'sandbox'] } : {}) })) } } },
     { name: 'studio.analyze', title: 'Analyze the repository', phrases: ['analyze', 'analyse', 'scan my repo', 'read my code', 'map my app'], radius: 'self',
       slots: {} },
     { name: 'studio.integrate', title: 'Prepare the integration', phrases: ['integrate', 'prepare the integration', 'wire up', 'expose'], radius: 'self',
@@ -28,6 +29,8 @@ export const STUDIO_SKILL: Skill = {
         mode: { type: 'choice', label: 'Mode', options: [{ value: 'voice', aliases: ['by voice', 'spoken'] }, { value: 'text', aliases: ['text only', 'typed'] }] },
         settingsBy: { type: 'choice', label: 'Settings by', options: [{ value: 'admins', aliases: ['admins only', 'admin'] }, { value: 'anyone' }, { value: 'nobody', aliases: ['no one', 'none'] }] },
       } },
+    { name: 'studio.sandbox', title: 'Start the test sandbox', phrases: ['start the sandbox', 'test my app', 'boot the sandbox', 'let me try it'], radius: 'self', slots: {} },
+    { name: 'studio.checks', title: 'Run the checks', phrases: ['run the checks', 'check it', 'test the phrases', 'try every feature'], radius: 'self', slots: {} },
     { name: 'studio.approve', title: 'Approve a change', phrases: ['approve', 'accept', 'keep'], radius: 'self', undo: true,
       slots: { change: { type: 'choice', required: true, label: 'Change', prompt: 'Which change?' } } },
     { name: 'studio.reject', title: 'Reject a change', phrases: ['reject', 'drop', 'discard'], radius: 'self', undo: true,

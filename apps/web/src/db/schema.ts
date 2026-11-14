@@ -153,3 +153,21 @@ export const agentEvents = pgTable('agent_events', {
   note: text('note'),
   createdAt: created(),
 }, (t) => [index('agent_events_app').on(t.appId, t.createdAt)]);
+
+/** A running (or finished) test sandbox: the developer's app with the Entoli layer applied. */
+export const sandboxes = pgTable('sandboxes', {
+  id: id(),
+  appId: text('app_id').notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(),
+  remoteId: text('remote_id'),
+  url: text('url'),
+  status: text('status').$type<'booting' | 'ready' | 'failed' | 'stopped'>().notNull().default('booting'),
+  log: jsonb('log').$type<string[]>().notNull().default([]),
+  /** Which integration changes were applied, and whether each was still waiting for approval. */
+  applied: jsonb('applied').$type<{ file: string; status: 'approved' | 'pending' }[]>(),
+  /** Map walk and phrase checks. */
+  results: jsonb('results'),
+  error: text('error'),
+  createdAt: created(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }),
+}, (t) => [index('sandboxes_app').on(t.appId, t.createdAt)]);

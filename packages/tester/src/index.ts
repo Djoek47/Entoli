@@ -131,3 +131,5 @@ export async function testApp(skill: Skill, url: string, opts: WalkOptions & { b
   try { return await walkMap(skill, url, browser, opts); }
   finally { if (!opts.browser) await browser.close(); }
 }
+
+export { checkPhrases, summarizePhrases, type PhraseResult, type PhraseStatus } from './phrases.js';

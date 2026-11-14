@@ -19,6 +19,7 @@
     "@entoli/tester": "workspace:*",
     "@neondatabase/serverless": "^1.2.0",
     "@vercel/analytics": "^2.0.1",
+    "@vercel/sandbox": "^4.0.0",
     "diff": "^8.0.4",
     "drizzle-orm": "^0.45.4",
     "next": "^16.4.5",

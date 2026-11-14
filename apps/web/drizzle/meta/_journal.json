@@ -50,6 +50,13 @@
       "when": 1794619040590,
       "tag": "0006_mcp",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794619682009,
+      "tag": "0007_sandboxes",
+      "breakpoints": true
     }
   ]
 }
