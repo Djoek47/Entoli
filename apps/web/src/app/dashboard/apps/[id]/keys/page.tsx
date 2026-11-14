@@ -1,4 +1,7 @@
-import { revokeKeyAction, setOriginsAction } from '../../../actions';
+import { revokeKeyAction, revokeMcpTokenAction, setOriginsAction } from '../../../actions';
+import { McpConnect } from './McpConnect';
+import { listMcpTokens } from '@/lib/mcp';
+import { PLANS } from '@/lib/plans';
 import { loadApp } from '@/lib/app-page';
 import { listKeys } from '@/lib/apps';
 import { NewKey } from './NewKey';
@@ -9,6 +12,7 @@ export default async function KeysPage({ params, searchParams }: { params: Promi
   const { app, db, user } = await loadApp(params);
   const sp = await searchParams;
   const keys = await listKeys(db, user.id, app.id);
+  const tokens = await listMcpTokens(db, user.id, app.id);
   return (
     <div className="stack">
       <p className="muted" style={{ margin: 0 }}>The app key goes in your front end: <code>mount({'{'} el, skill, key {'}'})</code>. It can only spend this app's intents; it cannot read or change anything here. Only a hash is stored.</p>
@@ -25,6 +29,14 @@ export default async function KeysPage({ params, searchParams }: { params: Promi
         <label>Origins<input name="origins" defaultValue={app.allowedOrigins.join(' ')} placeholder="https://app.example.com *.vercel.app" /></label>
         <div><button className="btn">Save origins</button></div>
       </form>
+      <McpConnect appId={app.id} allowed={PLANS[app.plan].integration} />
+      {tokens.length ? (
+        <table><thead><tr><th>Agent token</th><th>Token</th><th>Created</th><th>Last used</th><th /></tr></thead>
+          <tbody>{tokens.map((k) => (
+            <tr key={k.id}><td>{k.label}</td><td className="mono">{k.prefix}…</td><td>{k.createdAt.toISOString().slice(0, 10)}</td><td>{k.lastUsedAt ? k.lastUsedAt.toISOString().slice(0, 16).replace('T', ' ') : '—'}</td>
+              <td>{k.revokedAt ? <span className="pill warn">revoked</span> : <form action={revokeMcpTokenAction.bind(null, app.id, k.id)}><button className="btn small danger">Revoke</button></form>}</td></tr>
+          ))}</tbody></table>
+      ) : null}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { integrations } from '@/db/schema';
 import { loadApp } from '@/lib/app-page';
 import { integrationAllowed, QUESTIONS, type Answers } from '@/lib/integration';
 import { Refresh } from '../analyze/Refresh';
+import { listAgentEvents } from '@/lib/mcp';
 
 export const metadata = { title: 'Guided integration' };
 export const maxDuration = 300;
@@ -24,6 +25,7 @@ export default async function IntegratePage({ params, searchParams }: { params: 
   const sp = await searchParams;
   const blocked = integrationAllowed(app);
   const [latest] = await db.select().from(integrations).where(eq(integrations.appId, app.id)).orderBy(desc(integrations.createdAt)).limit(1);
+  const events = await listAgentEvents(db, app.id, 12);
   const busy = latest?.status === 'generating' || latest?.status === 'interview';
   const approved = latest?.changes.filter((c) => c.status === 'approved').length ?? 0;
   const showInterview = !latest || latest.status === 'failed' || sp.new === '1' || latest.status === 'pr_opened';
@@ -36,6 +38,18 @@ export default async function IntegratePage({ params, searchParams }: { params: 
       {blocked ? <p className="notice err">{blocked} {app.plan === 'developer' ? <a href={`/dashboard/apps/${app.id}/billing`}>See plans</a> : null}</p> : null}
       {!skill ? <div className="empty">No skill yet. <a href={`/dashboard/apps/${app.id}/analyze`}>Analyze the repository</a> first.</div> : null}
 
+      {events.length ? (
+        <section className="card stack">
+          <h3 style={{ margin: 0 }}>Your coding agent</h3>
+          <table><tbody>{events.map((e) => (
+            <tr key={e.id}><td className="mono muted" style={{ whiteSpace: 'nowrap' }}>{e.createdAt.toISOString().slice(11, 16)}</td>
+              <td><span className={`pill ${e.kind === 'refused' ? 'warn' : ''}`}>{e.kind === 'progress' ? e.status : e.kind === 'submit' ? e.status : 'refused'}</span></td>
+              <td>{e.act ? <code>{e.act}</code> : null} {e.note}</td></tr>
+          ))}</tbody></table>
+          <p className="muted" style={{ margin: 0 }}>Refused means the guardrails stopped it (a file or act it may not touch, or a weaker contract). Nothing is written to your repository: approve the diffs below, then open the pull request.</p>
+        </section>
+      ) : null}
+      {!busy && events[0] && Date.now() - events[0].createdAt.getTime() < 120_000 ? <Refresh everyMs={4000} /> : null}
       {busy ? <><Refresh everyMs={2500} /><p className="notice">Preparing the changes… this can take a minute.</p></> : null}
 
       {latest && !busy && latest.status !== 'failed' ? (

@@ -43,6 +43,13 @@
       "when": 1794618673191,
       "tag": "0005_live_seconds",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794619040590,
+      "tag": "0006_mcp",
+      "breakpoints": true
     }
   ]
 }

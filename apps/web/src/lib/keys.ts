@@ -32,3 +32,15 @@ export function sameHash(a: string, b: string): boolean {
   const x = Buffer.from(a, 'hex'), y = Buffer.from(b, 'hex');
   return x.length === y.length && timingSafeEqual(x, y);
 }
+
+/** MCP token for a coding agent: em_<32 base62>. Private (unlike the public app key), shown once. */
+export function generateMcpToken(): string {
+  const bytes = randomBytes(32);
+  let out = '';
+  for (const b of bytes) out += ALPHABET[b % 62];
+  return `em_${out}`;
+}
+
+export function looksLikeMcpToken(t: string): boolean {
+  return /^em_[0-9A-Za-z]{32}$/.test(t);
+}

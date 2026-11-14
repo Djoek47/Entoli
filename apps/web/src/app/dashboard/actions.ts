@@ -291,3 +291,23 @@ export async function publishSkillAction(appId: string): Promise<{ ok: boolean; 
   revalidatePath(`/dashboard/apps/${appId}`);
   return r.ok ? { ok: true, message: 'Published.' } : { ok: false, message: r.errors.join(' ') };
 }
+
+/** Returns the token to the form that asked; never put in a URL, cookie or log. */
+export async function createMcpTokenAction(appId: string, _prev: { token?: string; error?: string }, form: FormData): Promise<{ token?: string; error?: string }> {
+  const user = await requireUser();
+  try {
+    const { createMcpToken } = await import('@/lib/mcp');
+    const { token } = await createMcpToken(await getDb(), user.id, appId, String(form.get('label') ?? 'agent'));
+    revalidatePath(`/dashboard/apps/${appId}/keys`);
+    return { token };
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+}
+
+export async function revokeMcpTokenAction(appId: string, tokenId: string) {
+  const user = await requireUser();
+  const { revokeMcpToken } = await import('@/lib/mcp');
+  await revokeMcpToken(await getDb(), user.id, appId, tokenId);
+  revalidatePath(`/dashboard/apps/${appId}/keys`);
+}

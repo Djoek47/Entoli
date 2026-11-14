@@ -18,18 +18,18 @@ The voice tool is Entoli operating on itself. A developer on the L2 plan talks t
 
 Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing starts before the one above works.
 
-### 1. Always-on voice conversation (in progress)
+### 1. Always-on voice conversation (DONE)
 - `LiveProvider` interface in the SDK; `startLive(entoli, provider)` bridges transcripts into `entoli.hear`, speaks what Entoli answers, handles barge-in (the user talks, speech stops), mute, and speaks outcomes that arrive later (a held action completing).
 - Providers: OpenAI Realtime over WebRTC (ephemeral key minted by our server, never the real key); browser continuous recognition as the no-account fallback.
 - Server: `POST /api/voice/session` (L2 only, quota check, mints the ephemeral key), `POST /api/voice/heartbeat` (meters live seconds, tells the client when the quota is out).
 - Orb UI in the dashboard dock: idle, listening, thinking, speaking, muted; one click to turn on or off.
 - Done when: a spoken "go to the map tab" moves the dashboard, a spoken "open the pull request" shows the exact card and a spoken "yes" confirms it, talking over the reply stops it, mute stops all listening, and the quota ends the session.
 
-### 2. Entoli MCP server: the orchestrator and guardrail layer
+### 2. Entoli MCP server: the orchestrator and guardrail layer (DONE)
 - A remote MCP server (`/api/mcp`, per-app token) the developer adds to Claude Code, Cursor or any MCP client.
-- Tools it gives their agent: `get_skill`, `get_instructions` (how to wire each act, in their stack), `get_design_tokens`, `list_acts_to_wire`, `report_progress`, `submit_change` (a diff for human approval).
+- Tools it gives their agent: `get_skill`, `get_guardrails`, `get_instructions` (how to wire each act, in their stack), `list_acts_to_wire`, `report_progress`, `submit_change` (a diff for human approval), `get_change_status`. `get_design_tokens` is added in step 4, when there is something real to return.
 - Guardrails it enforces: the agent may only touch files in the approved list (the act's source files, the entry, the theme, `package.json`), only wire acts the developer exposed, never declare weaker radius/undo than the skill; every change returns as a diff into the existing approve-one-by-one flow. Nothing reaches the repository except through the pull request.
-- The live conversation can say what the agent is doing ("your agent has wired search; approve it?") because the agent reports through this server.
+- The agent's reports and refusals appear in the Guided integration tab. Having the live conversation announce them ("your agent has wired search; approve it?") is part of step 5, when the conversation drives the whole flow.
 - Done when: a real MCP client (the SDK's test client) connects with a token, is refused out-of-scope files, and its submitted diffs appear in the Guided integration tab.
 
 ### 3. Test sandbox windows
@@ -66,3 +66,17 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 - The OpenAI Realtime calls are written from the documented API and cannot be run here without a key; the first live run will need small fixes.
 - Live-seconds metering is reported by the browser; until sessions are bounded by the provider's own limits, a modified client could under-report. Mitigation: short-lived keys, a hard per-session cap, and provider-side spend limits.
 - A sandbox cannot always run a developer's full app (databases, secrets, private services). The plan treats that as a stated limit, not a hidden failure.
+
+## Run order (each line needs the one above it)
+
+| # | Step | Needs | Can start when |
+|---|---|---|---|
+| 1 | Always-on voice | nothing | done |
+| 2 | MCP server and guardrails | the skill and the approve-one-by-one flow | done |
+| 3 | Test sandbox windows | steps 1-2 (the agent's approved changes are what gets booted) | now |
+| 4 | Design-system extractor | step 3 (it screenshots the running app in the sandbox) | step 3 passes its test |
+| 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | step 4 passes its test |
+| 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | step 5 passes its test |
+| 7 | Launch pass | all of the above | step 6 passes its test |
+
+Rules for working through it without stopping: finish a step completely (tests green, `STATUS.md` entry, commit, push) before starting the next; when a step needs an account or key that is not available, build against a provider interface with a local implementation that can be tested, mark the live path "not verified" in `STATUS.md`, and carry on; never leave a step half-wired behind a flag that pretends it works.

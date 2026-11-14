@@ -186,5 +186,17 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 
 **Not verified**: the OpenAI Realtime calls (client secret, WebRTC `/v1/realtime/calls`, event names) follow the documented API but were never run here (no key). Expect small fixes on the first live run. ElevenLabs is not built; the interface is ready for it.
 
+## Voice tool, step 2 — Entoli MCP server (orchestrator and guardrail) — done
+
+**Real**
+- `POST /api/mcp`: a remote MCP server (Streamable HTTP, stateless, JSON), per-app tokens (`em_…`, hashed, shown once, revocable; Keys tab shows copy-paste setup for Claude Code and Cursor). L2 plan only; rate-limited.
+- Seven tools for the developer's own agent: `get_skill`, `get_guardrails`, `list_acts_to_wire`, `get_instructions` (exact wiring per act), `report_progress`, `submit_change`, `get_change_status`. The server also sends orchestration guidance in the MCP `instructions` field.
+- Guardrails (`lib/guardrails.ts`, pure and tested): (1) only files an integration needs: the exposed acts' source files, the entry, the skill, package.json, bootstrap/theme files, no `..`/absolute/`.env`/workflows; (2) only acts in the skill and never an "off" one; (3) never a weaker contract: radius, exact, voiceOnly, undo, setting kind, and the skill file may only tighten and never add acts or give the AI more reach; options must be literals so they can be checked; (4) package.json may only gain `@entoli/sdk`.
+- The agent cannot write to the repository. `submit_change` stores a pending diff (against the live file on GitHub) in the same Guided integration list, approved one by one, then one pull request; a revised submission replaces the earlier one; refusals are logged and shown with reasons.
+- Dashboard: agent tokens in Keys; "Your coding agent" activity feed in Guided integration.
+- Tests: 17 guardrail tests, and 6 with the **official MCP client** over real HTTP (handshake, tools, full submit/approve loop, 7 refusal cases, revision, auth, JSON-RPC edge cases). Also checked against the running Next server with a real client.
+
+**Not verified**: with Claude Code or Cursor themselves (tested with the official SDK client, which they use). Base-file reads use the GitHub contents API (installation token for private repos): the live path is untested here.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

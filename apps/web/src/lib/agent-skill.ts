@@ -21,8 +21,8 @@ function slotsLiteral(slots: NonNullable<Skill['acts'][number]['slots']>): strin
   return `{ ${entries.join(', ')} }`;
 }
 
-function body(skill: Skill, sources: Sources): string {
-  const wired = skill.acts.filter((a) => actLayer(skill, a) !== 'off');
+export function agentInstructions(skill: Skill, sources: Sources, only?: string[]): string {
+  const wired = skill.acts.filter((a) => actLayer(skill, a) !== 'off' && (!only || only.includes(a.name)));
   const off = skill.acts.filter((a) => actLayer(skill, a) === 'off');
   const rows = wired.map((a) => {
     const where = sources[a.name]?.[0];
@@ -76,7 +76,7 @@ ${JSON.stringify(skill, null, 2)}
 }
 
 export function agentSkillFile(skill: Skill, sources: Sources, format: AgentFormat): { filename: string; content: string } {
-  const text = body(skill, sources);
+  const text = agentInstructions(skill, sources);
   if (format === 'claude') {
     return {
       filename: 'SKILL.md',

@@ -130,3 +130,26 @@ export const rateLimits = pgTable('rate_limits', {
   count: integer('count').notNull().default(0),
   resetAt: timestamp('reset_at', { withTimezone: true }).notNull(),
 });
+
+/** Tokens that let a developer's own coding agent (Claude Code, Cursor) use the Entoli MCP server. Hashed at rest. */
+export const mcpTokens = pgTable('mcp_tokens', {
+  id: id(),
+  appId: text('app_id').notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  label: text('label').notNull().default('agent'),
+  prefix: text('prefix').notNull(),
+  hash: text('hash').notNull(),
+  createdAt: created(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+}, (t) => [uniqueIndex('mcp_tokens_hash').on(t.hash), index('mcp_tokens_app').on(t.appId)]);
+
+/** What the developer's agent reports and submits, for the dashboard and the voice conversation. */
+export const agentEvents = pgTable('agent_events', {
+  id: id(),
+  appId: text('app_id').notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  kind: text('kind').$type<'progress' | 'submit' | 'refused'>().notNull(),
+  act: text('act'),
+  status: text('status'),
+  note: text('note'),
+  createdAt: created(),
+}, (t) => [index('agent_events_app').on(t.appId, t.createdAt)]);

@@ -36,6 +36,7 @@ useEntoli('settings.email', { email: 'freeText' }, ({ email }) => changeEmail(St
   radius: 'external', exact: true, voiceOnly: true, // shows exactly the address; the yes covers only it
 });`}</pre>
           <p>Plain JavaScript: <code>defineAct(name, slots, handler, options)</code> works the same way.</p>
+          <p><strong>Or let your own coding agent do it.</strong> On L2, add the Entoli MCP server to Claude Code or Cursor (dashboard, Keys tab). Entoli tells your agent what to wire and keeps it inside the lines: it can only touch the files an integration needs, only wire acts you exposed, and never weaken a contract. Everything it writes comes back as a diff you approve; nothing reaches your repository except the pull request.</p>
           <p><strong>Or don't write it yourself.</strong> On L1, download the skill for Claude Code, Cursor or AGENTS.md (Skill tab) and ask your agent to integrate it. On L2, connect GitHub and speak to the dashboard: “integrate new note and search, by voice”, “approve all”, “open the pull request”.</p>
         </li>
       </ol>
