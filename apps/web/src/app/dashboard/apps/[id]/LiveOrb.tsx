@@ -7,7 +7,7 @@
 import { browserLive, getEntoli, openaiRealtime, startLive, type LiveProvider, type LiveSession, type LiveState } from '@entoli/sdk';
 import { useEffect, useRef, useState } from 'react';
 
-type Session = { provider: 'openai' | null; value?: string; model?: string; remainingSeconds: number; heartbeatSeconds?: number; error?: string };
+type Session = { provider: 'openai' | null; value?: string; model?: string; remainingSeconds: number; heartbeatSeconds?: number; maxSessionSeconds?: number; idleSeconds?: number; error?: string };
 
 export function LiveOrb({ appId, enabled, minutes, usedSeconds }: { appId: string; enabled: boolean; minutes: number; usedSeconds: number }) {
   const [state, setState] = useState<LiveState | 'off'>('off');
@@ -50,7 +50,9 @@ export function LiveOrb({ appId, enabled, minutes, usedSeconds }: { appId: strin
       const session = await startLive(entoli, provider, {
         onState: (st) => { setState(st); if (st === 'stopped') { stopped = true; cleanup(); } },
         onError: (e) => setNote(e.message),
-        maxMs: (s.remainingSeconds ? Math.min(s.remainingSeconds, 30 * 60) : 30 * 60) * 1000,
+        // The server sets both limits: one session is short, and it turns itself off when nobody is talking.
+        maxMs: Math.min(s.remainingSeconds || Infinity, s.maxSessionSeconds ?? 600) * 1000,
+        idleMs: (s.idleSeconds ?? 180) * 1000,
       });
       live.current = session;
       // While the conversation is on, say what the developer's own coding agent does.
@@ -88,7 +90,7 @@ export function LiveOrb({ appId, enabled, minutes, usedSeconds }: { appId: strin
   }
 
   const on = state !== 'off' && state !== 'stopped';
-  const label: Record<string, string> = { off: 'Live voice off', connecting: 'Connecting…', listening: 'Listening', speaking: 'Speaking', muted: 'Muted', stopped: 'Live voice off' };
+  const label: Record<string, string> = { off: 'Live voice off', connecting: 'Connecting…', listening: 'Listening · microphone on', speaking: 'Speaking · microphone on', muted: 'Muted · microphone off', stopped: 'Live voice off' };
   const left = Math.max(0, minutes - Math.round(usedSeconds / 60));
 
   if (!enabled) return null;

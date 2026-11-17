@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { memoryDb, type DB } from '@/db';
 import { createApp, getUsage, meter, setPlan, upsertUser } from '@/lib/apps';
-import { heartbeat, MAX_BEAT_SECONDS, mintSession } from '@/lib/voice';
+import { heartbeat, IDLE_SECONDS, MAX_BEAT_SECONDS, mintSession, SESSION_SECONDS } from '@/lib/voice';
 
 let db: DB;
 beforeAll(async () => { db = await memoryDb(); process.env.OPENAI_API_KEY = 'sk-real-server-key'; });
@@ -88,3 +88,28 @@ describe('POST /api/voice/heartbeat', () => {
     expect(codes.slice(6)).toEqual([429, 429]);
   });
 });
+
+describe('cost and abuse controls', () => {
+  it('tells the client the session cap and the idle timeout, so a mic left on cannot burn the month', async () => {
+    const { user, app } = await setup('l2');
+    const r = await mintSession(db, user.id, { appId: app.id }, { fetch: provider() });
+    expect(r.body).toMatchObject({ maxSessionSeconds: SESSION_SECONDS, idleSeconds: IDLE_SECONDS });
+    expect(SESSION_SECONDS).toBeLessThanOrEqual(10 * 60);
+    expect(IDLE_SECONDS).toBeLessThanOrEqual(3 * 60);
+  });
+
+  it('limits sessions per person across all their apps', async () => {
+    const { user, app } = await setup('l2');
+    const second = await createApp(db, user.id, { name: 'Second' });
+    await setPlan(db, second.app.id, 'l2', { id: 's2', status: 'active' });
+    const f = provider();
+    let denied = 0;
+    for (let i = 0; i < 45; i++) {
+      const r = await mintSession(db, user.id, { appId: i % 2 ? app.id : second.app.id }, { fetch: f });
+      if (r.status === 429) denied++;
+    }
+    expect(denied).toBeGreaterThan(0);
+    expect((f as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBeLessThanOrEqual(40);
+  });
+});
+

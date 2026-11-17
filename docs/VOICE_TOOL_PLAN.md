@@ -53,7 +53,7 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 - The original is always kept and shown beside the new one.
 - Done when: both routes produce a running app in the sandbox that passes the map walk.
 
-### 7. Launch pass for the voice tool
+### 7. Launch pass for the voice tool (DONE)
 - Cost controls (live minutes, per-session cap, idle timeout), abuse limits, a visible "listening" indicator and mute, privacy copy (audio is not stored by us), pricing page updated with the real live-minutes number, docs page "Integrate by voice", and a recorded end-to-end demo run.
 
 ## Accounts and keys the voice tool needs
@@ -77,6 +77,6 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 | 4 | Design-system extractor | step 3 (it looks at the running app in the sandbox) | done |
 | 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | done |
 | 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | done |
-| 7 | Launch pass | all of the above | now |
+| 7 | Launch pass | all of the above | done |
 
 Rules for working through it without stopping: finish a step completely (tests green, `STATUS.md` entry, commit, push) before starting the next; when a step needs an account or key that is not available, build against a provider interface with a local implementation that can be tested, mark the live path "not verified" in `STATUS.md`, and carry on; never leave a step half-wired behind a flag that pretends it works.

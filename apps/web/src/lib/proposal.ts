@@ -89,8 +89,8 @@ export function script(items: Recommendation[]): string {
   const [ai, device, manual] = [g('L2'), g('L1'), g('off')];
   const parts = [`I found ${items.length} features.`];
   if (ai.length) parts.push(`I would hand ${some(ai)} to the AI, because one sentence saves several clicks.`);
-  if (device.length) parts.push(`I would keep ${some(device)} on the device: they are short and need no AI.`);
-  if (manual.length) parts.push(`And I would leave ${some(manual)} manual, because they reach outside the app or cannot be undone.`);
+  if (device.length) parts.push(`I would keep ${some(device)} on the device: ${device.length === 1 ? 'it is short and needs' : 'they are short and need'} no AI.`);
+  if (manual.length) parts.push(`And I would leave ${some(manual)} manual, because ${manual.length === 1 ? 'it reaches' : 'they reach'} outside the app or cannot be undone.`);
   const changes = items.filter((i) => i.change).length;
   parts.push(changes ? `That changes ${changes}. Say accept to apply it, or ask why about any of them.` : 'That matches how things are already set. Ask why about any of them if you like.');
   return parts.join(' ');

@@ -15,7 +15,9 @@ import { getApp, getUsage, meter } from './apps';
 import { PLANS } from './plans';
 import { hit } from './ratelimit';
 
+/** One live session at most this long, and it turns itself off after this much silence: a mic left on cannot burn the month. */
 export const SESSION_SECONDS = 10 * 60;
+export const IDLE_SECONDS = 3 * 60;
 /** A heartbeat may claim at most this much, so one call cannot burn a whole month. */
 export const MAX_BEAT_SECONDS = 70;
 const MODEL = process.env.VOICE_MODEL ?? 'gpt-realtime';
@@ -30,6 +32,7 @@ export async function mintSession(db: DB, userId: string, body: { appId?: unknow
   if (!app) return { status: 404, body: { error: 'app not found' } };
   const plan = PLANS[app.plan];
   if (!plan.liveMinutes) return { status: 402, body: { error: 'Always-on voice is part of the L2 plan.' } };
+  if (!(await hit(db, `voice-user:${userId}`, 40, 3_600_000)).ok) return { status: 429, body: { error: 'Too many voice sessions this hour.' } };
   if (!(await hit(db, `voice-session:${app.id}`, 20, 3_600_000)).ok) return { status: 429, body: { error: 'Too many voice sessions this hour.' } };
   const usage = await getUsage(db, app.id);
   const remaining = plan.liveMinutes * 60 - usage.liveSeconds;
@@ -67,7 +70,7 @@ export async function mintSession(db: DB, userId: string, body: { appId?: unknow
   }
   const secret = (await res.json()) as { value?: string };
   if (!secret.value) return { status: 502, body: { error: 'The voice provider returned no key.' } };
-  return { status: 200, body: { provider: 'openai', value: secret.value, model: MODEL, remainingSeconds: remaining, maxSessionSeconds: SESSION_SECONDS, heartbeatSeconds: 30 } };
+  return { status: 200, body: { provider: 'openai', value: secret.value, model: MODEL, remainingSeconds: remaining, maxSessionSeconds: SESSION_SECONDS, idleSeconds: IDLE_SECONDS, heartbeatSeconds: 30 } };
 }
 
 export async function heartbeat(db: DB, userId: string, body: { appId?: unknown; seconds?: unknown }): Promise<VoiceResult> {

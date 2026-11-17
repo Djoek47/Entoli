@@ -252,5 +252,19 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 **Not done / not verified**
 - The model-drafted skill was only tested with a fake drafter (no key here). Rebuild was tested on a small fixture, not a real GitHub repo; apps needing a database or secrets run only as far as they can without them. Un-approving a change after approval does not remove the file (submit a revision instead). No voice act for "start a project" yet: it starts from the dashboard form.
 
+## Voice tool, step 7 — launch pass — done (the voice-tool plan is complete)
+
+**Real**
+- **Cost controls**: one live session is capped at 10 minutes and turns itself off after 3 quiet minutes (server-set, enforced by the SDK's `maxMs`/`idleMs`); a heartbeat can claim at most 70 s; the month's minutes stop the session; sessions are limited per app (20/h) and now per person (40/h across apps).
+- **Visible listening + mute**: the orb says "Listening · microphone on" / "Muted · microphone off", mute is one click, off by default.
+- **Privacy**: new Voice section (audio goes browser → provider with a 2-minute key; we do not record or store audio; only seconds are metered; projects stored until the app is deleted; zip export); OpenAI added as a sub-processor. Still a **draft for counsel**.
+- **Pricing**: the L2 card lists the real live-minutes number and the new "start from empty or rebuild" line (both come from `PLANS`, so they cannot drift).
+- **Docs**: `/docs/voice` "Integrate by voice" (start, talk it through, the agent, sandbox, limits, privacy), linked from the docs nav.
+- **Recorded run**: `docs/DEMO_RUN.md`, produced by `apps/web/test/demo.test.ts` against the real database, real MCP handler, real sandbox and real Chromium: describe → skill → proposal → why → accept (needs yes) → agent builds, one change refused by the guardrails → announced → approve → sandbox passes (2 of 2 screens, 2 of 2 phrases) → zip.
+- Small fix found on the way: the spoken proposal said "they are" for a single feature.
+- Tests: web 123 (3 new), whole repo green, typecheck clean, production build clean.
+
+**Not verified (needs your keys/accounts)**: a real OpenAI Realtime conversation, Claude drafting the skill and the proposals' model-side parts, a real coding agent over MCP, the Vercel Sandbox provider, real Stripe, the GitHub App pull-request step, a hosted browser for the checks. The demo run uses fakes for exactly these; it proves the flow and the guardrails, not model quality or audio.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

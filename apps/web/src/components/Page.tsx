@@ -20,6 +20,6 @@ export function Page({ children, nav = true }: { children: React.ReactNode; nav?
 }
 
 export function DocsNav({ at }: { at: string }) {
-  const items = [['/docs', 'Quickstart'], ['/docs/skill', 'Skill format'], ['/docs/safety', 'Safety model'], ['/pricing', 'Pricing']] as const;
+  const items = [['/docs', 'Quickstart'], ['/docs/skill', 'Skill format'], ['/docs/voice', 'Integrate by voice'], ['/docs/safety', 'Safety model'], ['/pricing', 'Pricing']] as const;
   return <nav className="tabs" aria-label="Docs">{items.map(([href, label]) => <a key={href} href={href} aria-current={href === at ? 'page' : undefined}>{label}</a>)}</nav>;
 }

@@ -74,6 +74,7 @@ export function planFeatures(p: Plan): string[] {
     `Voice tool: integrate your app by speaking to the dashboard (${p.voiceToolTurns} turns a month)`,
     `Always-on voice conversation, ${p.liveMinutes} minutes a month (or send instructions one at a time)`,
     'Integration delivered as one pull request you approve',
+    'Start from empty or copy an app and rebuild it on Entoli, original kept beside it',
     'Choose Layer 1, Layer 2 or off for each feature',
   ];
 }
