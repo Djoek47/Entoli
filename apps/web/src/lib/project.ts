@@ -115,6 +115,12 @@ async function sdkBundle(): Promise<string> {
   for (const p of [join(process.cwd(), 'public/entoli.min.js'), join(process.cwd(), 'apps/web/public/entoli.min.js')]) {
     try { return await readFile(p, 'utf8'); } catch { /* try the next */ }
   }
+  // On a serverless deployment the public folder is served over HTTP but is not on disk.
+  const base = process.env.APP_URL?.replace(/\/$/, '');
+  if (base) {
+    const r = await fetch(`${base}/entoli.min.js`).catch(() => null);
+    if (r?.ok) return r.text();
+  }
   throw new Error('The Entoli SDK bundle (public/entoli.min.js) is missing from this deployment.');
 }
 
