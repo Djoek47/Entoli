@@ -115,6 +115,20 @@ describe('startLive', () => {
     expect(onError).toHaveBeenCalled();
   });
 
+  it('can announce something unprompted, unless muted or stopped', async () => {
+    const { e, timers } = setup();
+    const f = fakeProvider();
+    const s = await startLive(e, f.p, { timers });
+    s.say('Your agent wired search.');
+    expect(f.log).toContain('say:Your agent wired search.');
+    s.mute();
+    s.say('Another one.');
+    expect(f.log).not.toContain('say:Another one.');
+    s.unmute(); s.stop();
+    s.say('After stop.');
+    expect(f.log).not.toContain('say:After stop.');
+  });
+
   it('says nothing after it has stopped', async () => {
     const { e, timers } = setup();
     const f = fakeProvider();

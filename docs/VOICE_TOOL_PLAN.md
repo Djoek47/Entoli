@@ -43,7 +43,7 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 - Apply it to the Entoli bar and card (`entoli.theme.css`, already generated for the Next/Vite bootstraps), preview it in the sandbox windows, adjustable by voice ("rounder", "use our blue").
 - Done when: on three fixture apps (plain CSS variables, Tailwind, CSS-in-JS) the extracted tokens match the app and the bar visibly matches in a screenshot comparison.
 
-### 5. What to expose: the proposal conversation
+### 5. What to expose: the proposal conversation (DONE)
 - After reading the app, Entoli proposes what to put on the Entoli layer ("these five features would be simpler by voice; these two should stay manual"), says why, and sets layers (L1 / L2 / off) as the developer agrees. Uses the analyzer, the map and Claude; already half there.
 - Done when: the conversation produces the skill with per-act layers set, spoken start to finish.
 
@@ -75,8 +75,8 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 | 2 | MCP server and guardrails | the skill and the approve-one-by-one flow | done |
 | 3 | Test sandbox windows | steps 1-2 (the agent's changes are what gets booted) | done |
 | 4 | Design-system extractor | step 3 (it looks at the running app in the sandbox) | done |
-| 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | now |
-| 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | step 5 passes its test |
+| 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | done |
+| 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | now |
 | 7 | Launch pass | all of the above | step 6 passes its test |
 
 Rules for working through it without stopping: finish a step completely (tests green, `STATUS.md` entry, commit, push) before starting the next; when a step needs an account or key that is not available, build against a provider interface with a local implementation that can be tested, mark the live path "not verified" in `STATUS.md`, and carry on; never leave a step half-wired behind a flag that pretends it works.

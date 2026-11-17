@@ -15,9 +15,11 @@ export function LiveOrb({ appId, enabled, minutes, usedSeconds }: { appId: strin
   const live = useRef<LiveSession | null>(null);
   const beat = useRef<ReturnType<typeof setInterval> | null>(null);
   const since = useRef(0);
+  const watch = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const cleanup = () => {
     if (beat.current) { clearInterval(beat.current); beat.current = null; }
+    if (watch.current) { clearInterval(watch.current); watch.current = null; }
     live.current = null;
   };
   useEffect(() => () => { live.current?.stop(); cleanup(); }, []);
@@ -51,6 +53,17 @@ export function LiveOrb({ appId, enabled, minutes, usedSeconds }: { appId: strin
         maxMs: (s.remainingSeconds ? Math.min(s.remainingSeconds, 30 * 60) : 30 * 60) * 1000,
       });
       live.current = session;
+      // While the conversation is on, say what the developer's own coding agent does.
+      let lastSeen = new Date().toISOString();
+      watch.current = setInterval(async () => {
+        try {
+          const r = await fetch(`/api/studio/events?appId=${encodeURIComponent(appId)}&since=${encodeURIComponent(lastSeen)}`);
+          if (!r.ok) return;
+          const b = (await r.json()) as { announcement: { text: string; latest: string } | null; now: string };
+          lastSeen = b.announcement?.latest ?? lastSeen;
+          if (b.announcement) session.say(b.announcement.text);
+        } catch { /* try again next time */ }
+      }, 6000);
       // Meter the time: report every stretch, stop when the month's minutes run out.
       beat.current = setInterval(async () => {
         const seconds = Math.round((Date.now() - since.current) / 1000);

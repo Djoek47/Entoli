@@ -43,6 +43,8 @@ export type LiveOptions = {
 
 export type LiveSession = {
   readonly state: LiveState;
+  /** Say something unprompted (an announcement). Ignored while muted or stopped. */
+  say(text: string): void;
   mute(): void;
   unmute(): void;
   stop(): void;
@@ -141,6 +143,7 @@ export async function startLive(entoli: Entoli, provider: LiveProvider, opts: Li
 
   return {
     get state() { return state; },
+    say(text) { speak(text.replace(/\s+/g, ' ').trim().slice(0, 400)); },
     mute() { muted = true; provider.interrupt(); provider.setMuted(true); set('muted'); },
     unmute() { muted = false; provider.setMuted(false); set('listening'); },
     stop,

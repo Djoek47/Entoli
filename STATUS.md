@@ -226,5 +226,18 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 
 **Not done on purpose**: no screenshot-diff image comparison (computed-style assertions on the real page are stricter and not flaky); font files are not downloaded (the stack is kept, and Google Fonts are loaded by the app itself).
 
+## Voice tool, step 5 — the proposal conversation — done
+
+**Real**
+- "What should Entoli take over?": every act gets a recommendation with a reason in plain words. **L2** (the AI answers): several details, free text, a time or a person, and undoable: one sentence replaces several clicks. **L1** (the device answers): short, predictable acts, no AI, no cost. **Manual (off)**: reaches outside the app, or cannot be undone and looks destructive (pay, delete, publish, passwords); an act that affects another person is helped by the AI but always asks. Deterministic (same skill, same proposal), so the reasons are checkable and nothing can invent an act.
+- Spoken as a conversation: "I found 8 features. I would hand New note, Search notes and Change font size to the AI… I would keep Tag note, Delete note, Go to and 1 more on the device… And I would leave Change email manual… Say accept to apply it, or ask why." Then **"why is change email manual?"** explains, **"accept the proposal"** asks for a yes (it changes what the AI can reach) and applies per-act layers to the skill, and it is **undoable** (the previous layers are restored exactly).
+- Map tab: a "What should Entoli take over?" card (grouped, reasons, Accept / Undo); the layer table below stays editable.
+- **Announcements**: while the live conversation is on, the dashboard polls what the developer's own coding agent did (`/api/studio/events`) and says it: "Your agent wired search. Your agent submitted a change to src/App.tsx: Wire new note. It is waiting for your approval." / blocked / "The guardrails stopped your agent…". Quiet about "started".
+- SDK additions: `say` on an act (what is said when it finishes, instead of "Done: …"), `LiveSession.say()` for unprompted speech, and `readOnly` acts (run at once: nothing to veto or undo; never loosens settings, external, exact, voice-only or AI-picked acts). The dashboard's own acts now suggest the next step when they finish ("When it is done, ask me what to expose.").
+- Found by the acceptance test: the proposal answered "Say yes to go ahead" because the contract only let undoable acts run without a yes (→ `readOnly`); stale layer dropdowns after accepting (→ keyed forms); an awkward spoken list.
+- Tests: 13 on the engine/announcements/skill hygiene (including "no two dashboard acts share a trigger phrase"), 2 on the full spoken flow (real runtime, real dashboard skill, real live session with a fake voice, real database: propose → why → accept needs yes → yes → layers set; and "no" changes nothing), 3 on `readOnly`, 2 on `say`, 1 on announcements. Real dashboard checked: propose, accept, undo.
+
+**Not done**: no Claude pass over the proposal (the analyzer's model review already judges radius and undo; a second opinion here would make the reasons uncheckable). The spoken conversation has only been run with a fake voice provider and the typed bar; with a real realtime key it is unverified (as step 1).
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

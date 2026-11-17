@@ -32,11 +32,23 @@ export type ActOptions = {
   exact?: boolean;
   radius?: Radius;
   kind?: 'feature' | 'setting';
+  /**
+   * The act only reads or explains: it changes nothing. It runs at once, with no hold and no
+   * yes, because there is nothing to veto or undo. It never lowers anything else: settings,
+   * other-person, external, exact and voiceOnly acts keep their yes.
+   */
+  readOnly?: boolean;
   title?: string;
   /** Extra trigger phrases, added to the skill's. */
   phrases?: string[];
   /** One line for the receipt. Defaults to the title and arguments. */
   describe?: (slots: Record<string, unknown>) => string;
+  /**
+   * What Entoli says when the act has finished (shown on the card and spoken in a
+   * live conversation), instead of "Done: <receipt>". For acts whose result is
+   * something to hear: a proposal, an explanation, a next step.
+   */
+  say?: (result: unknown, slots: Record<string, unknown>) => string | undefined;
   /**
    * Normalise and check the slots BEFORE the card is drawn, so the card shows
    * exactly what will run. Return new slots, or a string to refuse (shown to
@@ -141,11 +153,13 @@ type Registered = {
   voiceOnly: boolean;
   exact: boolean;
   kind: 'feature' | 'setting';
+  readOnly: boolean;
   declared: boolean;
   /** Effective layer: 'L2' the AI may pick it, 'L1' device only. ('off' acts are never registered.) */
   layer: Exclude<ActLayer, 'off'>;
   handler: ActHandler;
   describe?: ActOptions['describe'];
+  say?: ActOptions['say'];
   prepare?: ActOptions['prepare'];
 };
 
@@ -276,6 +290,7 @@ export class Entoli {
       voiceOnly: !!(declared?.voiceOnly || opts.voiceOnly),
       exact: !!(declared?.exact || opts.exact),
       kind: declared?.kind === 'setting' || opts.kind === 'setting' ? 'setting' : 'feature',
+      readOnly: !!opts.readOnly,
       declared: !!declared,
       layer,
       handler,
@@ -283,6 +298,7 @@ export class Entoli {
     if (opts.undo && declared?.undo !== false) reg.undoFn = opts.undo;
     if (opts.describe) reg.describe = opts.describe;
     if (opts.prepare) reg.prepare = opts.prepare;
+    if (opts.say) reg.say = opts.say;
     if (reg.phrases.length === 0) reg.phrases.push(humanize(name).toLowerCase());
     this.acts.set(name, reg);
     return () => {
@@ -576,6 +592,13 @@ export class Entoli {
       { radius: reg.radius, undo: !!reg.undoFn, voiceOnly: reg.voiceOnly, exact: reg.exact, kind: reg.kind, fromModel: p.via === 'model' },
       channel,
     );
+    // A read-only act has nothing to veto: it runs at once. Only the plain "hold" case is relaxed.
+    const holdOnly = reg.readOnly && !reg.undoFn && plan.assent === 'yes' && reg.radius === 'self' && !reg.exact && !reg.voiceOnly && reg.kind !== 'setting' && p.via !== 'model';
+    if (holdOnly || (reg.readOnly && plan.assent === 'hold')) {
+      this.set({ ...base, phase: 'running' });
+      void this.commit();
+      return this._state;
+    }
     if (plan.assent === 'hold' && this.confirmMode === 'always') plan = { assent: 'yes', why: 'This app asks before every action.' };
     if (plan.assent === 'blocked') {
       this.pending = null;
@@ -640,7 +663,8 @@ export class Entoli {
         const values = { ...p.values };
         this.undoers.set(receipt.id, () => fn(result, values));
       }
-      this.set({ phase: 'done', said: p.said, act: reg.name, title: reg.title, args, message: `Done: ${summary}`, receipts: [receipt, ...this._state.receipts].slice(0, 20) });
+      const said = (() => { try { return reg.say?.(result, p.values)?.trim(); } catch { return undefined; } })();
+      this.set({ phase: 'done', said: p.said, act: reg.name, title: reg.title, args, message: said || `Done: ${summary}`, receipts: [receipt, ...this._state.receipts].slice(0, 20) });
     } catch (e) {
       this.set({ phase: 'error', said: p.said, act: reg.name, title: reg.title, message: `That failed: ${(e as Error).message}` });
     }

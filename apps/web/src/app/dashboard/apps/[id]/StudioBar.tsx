@@ -6,7 +6,7 @@
 import { defineAct, mount, type Mounted, type RemoteChoice } from '@entoli/sdk';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { extractDesignAction, resetDesignTweaksAction, tweakDesignAction, changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
+import { acceptProposalAction, proposeAction, undoProposalAction, whyAction, extractDesignAction, resetDesignTweaksAction, tweakDesignAction, changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
 import { pickFeatures, STUDIO_SKILL } from '@/lib/studio-skill';
 import { LiveOrb } from './LiveOrb';
 
@@ -48,7 +48,7 @@ export function StudioBar(props: StudioProps) {
     const changeOptions = () => (p().integration?.changes ?? []).map((c) => ({ value: c.id, label: c.title, aliases: [c.file, c.file.split('/').pop() ?? ''] }));
     const offs = [
       defineAct('studio.go', { tab: 'choice' }, ({ tab }) => { const prev = pathRef.current; router.push(`${base}/${String(tab)}`); return prev; }, { undo: (prev) => router.push(String(prev)) }),
-      defineAct('studio.analyze', {}, async () => { await startAnalysisAction(props.appId); }, { describe: () => `Analysis of ${p().repo ?? 'the repository'} started` }),
+      defineAct('studio.analyze', {}, async () => { await startAnalysisAction(props.appId); }, { describe: () => `Analysis of ${p().repo ?? 'the repository'} started`, say: () => 'Reading your repository. When it is done, ask me what to expose.' }),
       defineAct('studio.integrate', { features: 'freeText', layer: 'choice', mode: 'choice', settingsBy: 'choice' }, async (s) => {
         await startIntegrationAction(props.appId, form({
           features: String(s.features).split(',').filter(Boolean), layer: String(s.layer), mode: String(s.mode),
@@ -62,16 +62,24 @@ export function StudioBar(props: StudioProps) {
           return { features: features.join(','), layer: s.layer ?? (p().voiceTool ? 'L2' : 'L1'), mode: s.mode ?? 'voice', settingsBy: s.settingsBy ?? 'admins' };
         },
         describe: (s) => `Preparing the integration: ${String(s.features).split(',').length} features`,
+        say: () => 'Preparing the changes. Look them over in the integration tab, or say approve all.',
       }),
-      defineAct('studio.sandbox', {}, async () => { await startSandboxAction(props.appId); }, { describe: () => 'Starting the test sandbox' }),
+      defineAct('studio.sandbox', {}, async () => { await startSandboxAction(props.appId); }, { describe: () => 'Starting the test sandbox', say: () => 'Starting the sandbox. Give it a minute, then say run the checks.' }),
       defineAct('studio.checks', {}, async () => {
         const id = p().sandboxId; if (!id) throw new Error('Start the test sandbox first.');
         await runChecksAction(props.appId, id);
       }, { describe: () => 'Ran the checks' }),
-      defineAct('studio.design', {}, async () => { await extractDesignAction(props.appId); }, { describe: () => 'Extracted your design system' }),
+      defineAct('studio.design', {}, async () => { await extractDesignAction(props.appId); }, { describe: () => 'Extracted your design system', say: () => 'Done. I read your design. Look at the preview, and tell me what to change, for example rounder.' }),
       defineAct('studio.tweak', { instruction: 'freeText' }, async ({ instruction }) => {
         await tweakDesignAction(props.appId, form({ instruction: String(instruction) })); refresh();
       }, { undo: async () => { await resetDesignTweaksAction(props.appId); refresh(); }, describe: ({ instruction }) => `Design: ${String(instruction)}` }),
+      defineAct('studio.propose', {}, async () => proposeAction(props.appId), { readOnly: true, describe: () => 'Proposal ready', say: (r) => (r as { spoken: string }).spoken }),
+      defineAct('studio.accept', {}, async () => acceptProposalAction(props.appId), {
+        undo: async () => { await undoProposalAction(props.appId); refresh(); },
+        describe: () => 'Accepted the proposal',
+        say: (r) => `Done. I changed ${(r as { changed: number }).changed} features. You can say undo, or move any of them yourself.`,
+      }),
+      defineAct('studio.why', { act: { type: 'choice', options: () => p().acts.map((a) => ({ value: a.name, label: a.title, aliases: [a.name] })) } }, async ({ act }) => whyAction(props.appId, String(act)), { readOnly: true, say: (r) => String(r), describe: ({ act }) => `Why ${String(act)}` }),
       defineAct('studio.approve', { change: { type: 'choice', options: changeOptions } }, async ({ change }) => {
         const i = p().integration; if (!i) throw new Error('No prepared changes yet.');
         await changeStatusAction(props.appId, i.id, String(change), 'approved'); refresh(); return change;

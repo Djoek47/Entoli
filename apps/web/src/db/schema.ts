@@ -31,6 +31,8 @@ export const apps = pgTable('apps', {
   skill: jsonb('skill'),
   skillStatus: text('skill_status').$type<'none' | 'draft' | 'published'>().notNull().default('none'),
   previewUrl: text('preview_url'),
+  /** The latest "what should Entoli take over?" proposal, and what accepting it changed. */
+  proposal: jsonb('proposal').$type<{ items: unknown[]; spoken: string; createdAt: string; applied?: Record<string, string | null> }>(),
   /** The app's design system: what was extracted from the code and from the running app, plus the tweaks applied on top. */
   design: jsonb('design').$type<{ static: unknown | null; runtime: unknown | null; tweaks: string[]; extractedAt: string }>(),
   /** Origins allowed to use this app's key from a browser. Empty: any origin. */

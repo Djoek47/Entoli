@@ -333,3 +333,61 @@ describe('per-act layers', () => {
     expect(s.message).not.toBe('Adding.');
   });
 });
+
+describe('runtime: say', () => {
+  it('an act can supply what is said when it finishes, instead of "Done: …"', async () => {
+    const timers = new FakeTimers();
+    const e = new Entoli({ skill, timers });
+    e.register('note.create', {}, () => ({ count: 3 }), { undo: () => {}, say: (r) => `I found ${(r as { count: number }).count} things.` });
+    await e.hear('new note x');
+    await timers.advance(1600);
+    expect(e.state).toMatchObject({ phase: 'done', message: 'I found 3 things.' });
+    expect(e.state.receipts[0]!.summary).toMatch(/^New note/); // the receipt keeps the factual line
+  });
+
+  it('falls back to the receipt line when say returns nothing or throws', async () => {
+    for (const say of [() => undefined, () => { throw new Error('x'); }]) {
+      const timers = new FakeTimers();
+      const e = new Entoli({ skill, timers });
+      e.register('note.create', {}, () => 1, { undo: () => {}, say });
+      await e.hear('new note x');
+      await timers.advance(1600);
+      expect(e.state.message).toMatch(/^Done: New note/);
+    }
+  });
+});
+
+describe('runtime: readOnly', () => {
+  it('a read-only act runs at once: no hold, no yes, and no Undo to offer', async () => {
+    const timers = new FakeTimers();
+    const e = new Entoli({ skill, timers });
+    const fn = vi.fn(() => 'answer');
+    e.register('note.create', {}, fn, { readOnly: true, say: (r) => String(r) });
+    await e.hear('new note anything');
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fn).toHaveBeenCalledOnce();
+    expect(e.state).toMatchObject({ phase: 'done', message: 'answer' });
+    expect(e.state.receipts[0]!.undoable).toBe(false);
+  });
+
+  it('never loosens anything else: settings, external, exact and voice-only acts still need their yes', async () => {
+    const timers = new FakeTimers();
+    const e = new Entoli({ skill, timers });
+    const theme = vi.fn(); const email = vi.fn();
+    e.register('settings.theme', {}, theme, { readOnly: true });
+    e.register('settings.email', {}, email, { readOnly: true });
+    expect((await e.hear('switch to dark mode')).phase).toBe('confirm');
+    expect((await e.hear('change my email to a@b.co', { channel: 'voice' })).phase).toBe('exact');
+    expect(theme).not.toHaveBeenCalled();
+    expect(email).not.toHaveBeenCalled();
+  });
+
+  it('what the AI alone picked still waits for a yes', async () => {
+    const e = new Entoli({ skill, timers: new FakeTimers(), layer: 'L1', resolver: async () => ({ act: 'note.create', slots: { text: 'x' } }) });
+    const fn = vi.fn();
+    e.register('note.create', {}, fn, { readOnly: true });
+    const s = await e.hear('jot something about the meeting');
+    expect(s.phase).toBe('confirm');
+    expect(fn).not.toHaveBeenCalled();
+  });
+});

@@ -403,3 +403,60 @@ export async function resetDesignTweaksAction(appId: string) {
   await resetTweaks(db, app);
   revalidatePath(`/dashboard/apps/${appId}/design`);
 }
+
+// ---- the proposal conversation ----
+
+/** Returns what to say (voice tool). */
+export async function proposeAction(appId: string): Promise<{ spoken: string; count: number }> {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) throw new Error('App not found.');
+  const { proposeFor } = await import('@/lib/proposal');
+  const p = await proposeFor(db, app);
+  revalidatePath(`/dashboard/apps/${appId}`);
+  return { spoken: p.spoken, count: p.items.length };
+}
+
+export async function acceptProposalAction(appId: string): Promise<{ changed: number }> {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) throw new Error('App not found.');
+  const { acceptProposal } = await import('@/lib/proposal');
+  const r = await acceptProposal(db, app);
+  revalidatePath(`/dashboard/apps/${appId}`);
+  return r;
+}
+
+export async function undoProposalAction(appId: string): Promise<void> {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) return;
+  const { undoProposal } = await import('@/lib/proposal');
+  await undoProposal(db, app);
+  revalidatePath(`/dashboard/apps/${appId}`);
+}
+
+export async function whyAction(appId: string, act: string): Promise<string> {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) throw new Error('App not found.');
+  const { proposalOf, explain } = await import('@/lib/proposal');
+  const p = proposalOf(app);
+  if (!p) return 'Ask me what to expose first, and then I can explain each choice.';
+  return explain(p, act);
+}
+
+// Page buttons (they only need to do the thing; the page re-renders).
+export async function proposeFormAction(appId: string) {
+  try { await proposeAction(appId); } catch (e) { redirect(`/dashboard/apps/${appId}/map?error=${encodeURIComponent((e as Error).message.slice(0, 300))}`); }
+}
+export async function acceptProposalFormAction(appId: string) {
+  try { await acceptProposalAction(appId); } catch (e) { redirect(`/dashboard/apps/${appId}/map?error=${encodeURIComponent((e as Error).message.slice(0, 300))}`); }
+}
+export async function undoProposalFormAction(appId: string) {
+  await undoProposalAction(appId);
+}
