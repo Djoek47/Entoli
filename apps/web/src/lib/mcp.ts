@@ -19,7 +19,8 @@ import type { DB } from '@/db';
 import { agentEvents, apps, integrations, mcpTokens, type IntegrationChange } from '@/db/schema';
 import { agentInstructions } from './agent-skill';
 import { getApp, skillOf } from './apps';
-import { allowedFiles, checkFile, checkSubmission, MAX_CHANGES } from './guardrails';
+import { allowedFiles, checkFile, checkProjectFile, checkSubmission, MAX_CHANGES } from './guardrails';
+import { isProject, readProjectFile } from './project';
 import { gh, installationToken } from './github';
 import { blobSha, latestSources } from './integration';
 import { generateMcpToken, hashKey, keyPrefix, looksLikeMcpToken } from './keys';
@@ -138,6 +139,7 @@ async function callTool(db: DB, app: AppRow, name: string, args: Record<string, 
   const skill = skillOf(app);
   if (!skill) return text('This app has no valid skill yet. The developer must analyze the repository or write a skill in the dashboard first.', true);
   const sources = await latestSources(db, app.id);
+  const project = isProject(app);
   const allowed = allowedFiles(skill, sources);
 
   switch (name) {
@@ -152,9 +154,9 @@ async function callTool(db: DB, app: AppRow, name: string, args: Record<string, 
           'The act name and the options object must be literals, so they can be checked.',
           'package.json may only gain "@entoli/sdk" in dependencies.',
           'entoli.skill.json may only be tightened: never add acts, loosen the contract, or give the AI more reach.',
-          'You cannot write to the repository. submit_change creates a diff the developer approves.',
+          project ? 'This is a project built on Entoli: you may write any normal source file, never secrets (.env), git data or node_modules. package.json may not have install-time scripts. Nothing is written until the developer approves each diff.' : 'You cannot write to the repository. submit_change creates a diff the developer approves.',
         ],
-        allowedFiles: allowed,
+        allowedFiles: project ? 'any normal project file' : allowed,
         limits: { maxChanges: MAX_CHANGES, maxFileKilobytes: 200 },
       });
 
@@ -202,13 +204,13 @@ async function callTool(db: DB, app: AppRow, name: string, args: Record<string, 
       if (content === null || !summary) return text('file, content (the complete new file) and summary are required.', true);
       const refuse = async (reasons: string[]) => { await log(db, app.id, 'refused', typeof args.act === 'string' ? args.act : null, 'refused', `${file}: ${reasons[0]}`); return text(`Refused, nothing was submitted:\n- ${reasons.join('\n- ')}`, true); };
 
-      const f = checkFile(file, allowed);
+      const f = project ? checkProjectFile(file) : checkFile(file, allowed);
       if (!f.ok) return refuse(f.reasons);
       const path = f.path!;
       let base: BaseFile = null;
-      try { base = await (deps.read ?? githubFileReader())(app, path); }
+      try { base = project ? await readProjectFile(db, app.id, path).then((c) => (c === null ? null : { content: c, sha: '' })) : await (deps.read ?? githubFileReader())(app, path); }
       catch (e) { return text(`Could not read ${path} from the repository to compare against: ${(e as Error).message}. Try again.`, true); }
-      const v = checkSubmission({ path, content, base: base?.content ?? null, skill });
+      const v = checkSubmission({ path, content, base: base?.content ?? null, skill, project });
       if (!v.ok) return refuse(v.reasons);
       if (base && base.content === content) return text('That is identical to the current file; nothing to submit.', true);
 

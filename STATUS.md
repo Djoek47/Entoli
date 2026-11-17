@@ -239,5 +239,18 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 
 **Not done**: no Claude pass over the proposal (the analyzer's model review already judges radius and undo; a second opinion here would make the reasons uncheckable). The spoken conversation has only been run with a fake voice provider and the typed bar; with a real realtime key it is unverified (as step 1).
 
+## Voice tool, step 6 — blank start and copy-and-rebuild — done
+
+**Real**
+- **From empty**: describe the app → Entoli writes the skill first (screens, acts, knowledge; the model drafts it, validated, one retry, else an honest empty skill) → a dependency-free starter (server, page, SDK bundle, skill) whose bar is mounted and whose acts are placeholders → the developer's own agent builds the rest over MCP. Without a model key it starts with one empty screen and says so (no invented skill).
+- **Copy and rebuild**: the original repo stays untouched in `apps.repo`; a copy of its text source (no `.env`, no `node_modules`, size-capped) becomes the project. Two sandboxes per app by role (`new`, `original`) run side by side; the same map walk and phrase checks run on both and `compare` says which reaches more.
+- Files live in the database (`project_files`, migration 0010), not in any repository, until exported as a **zip**. Approving an agent's change writes the file into the project (no PR: there is no repository).
+- **Guardrails in project mode**: any normal source path, never `.env*`, `.git`, `node_modules`; `package.json` may not have install/prepare scripts; the contract rules on act code and the tighten-only skill rule are unchanged.
+- Dashboard: "Build a new app on Entoli" form, a **Project** tab (files, run new/original, side-by-side results, zip). 5 new projects a day per user.
+- Tests (7, real sandbox + real Chromium): the starter passes the map walk and every phrase; rebuild copies only source and both sides run with the same checks; MCP refuses `.env` and `postinstall`, approving writes the file; invalid draft retried then empty; zip matches.
+
+**Not done / not verified**
+- The model-drafted skill was only tested with a fake drafter (no key here). Rebuild was tested on a small fixture, not a real GitHub repo; apps needing a database or secrets run only as far as they can without them. Un-approving a change after approval does not remove the file (submit a revision instead). No voice act for "start a project" yet: it starts from the dashboard form.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

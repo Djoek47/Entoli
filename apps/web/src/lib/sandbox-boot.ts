@@ -22,6 +22,7 @@ import { apps, integrations, sandboxes, testRuns } from '@/db/schema';
 import { fetchRepo, type Fetched } from './repo-fetch';
 import { freePort, sandboxProvider, SANDBOX_TIMEOUT_MS, type Sandbox, type SandboxFile, type SandboxProvider } from './sandbox';
 import { hit } from './ratelimit';
+import { projectFilesOf } from './project';
 import { PLANS } from './plans';
 
 type AppRow = typeof apps.$inferSelect;
@@ -31,19 +32,23 @@ const MAX_FILES = 4000;
 const MAX_TOTAL = 40 * 1024 * 1024;
 
 export type BootDeps = {
+  /** Which side: the new project (default) or the original it was copied from. */
+  role?: 'new' | 'original';
   provider?: SandboxProvider;
   /** The repository to run. Default: GitHub, every file. */
   source?: (app: AppRow) => Promise<Fetched>;
   port?: number;
 };
 
-export async function queueSandbox(db: DB, app: AppRow): Promise<{ id: string } | { error: string }> {
+export async function queueSandbox(db: DB, app: AppRow, role: 'new' | 'original' = 'new'): Promise<{ id: string } | { error: string }> {
   if (!PLANS[app.plan].integration) return { error: 'The test sandbox is part of the L2 plan.' };
-  if (!app.repo) return { error: 'Connect a repository first.' };
+  const project = app.origin?.kind === 'blank' || app.origin?.kind === 'rebuild';
+  if (role === 'original' && app.origin?.kind !== 'rebuild') return { error: 'Only a rebuild has an original to run.' };
+  if (!app.repo && !project) return { error: 'Connect a repository first.' };
   if (!(await hit(db, `sandbox:${app.ownerId}`, 6, 3_600_000)).ok) return { error: 'Six sandboxes an hour at most. Try again later.' };
-  const [busy] = await db.select({ id: sandboxes.id }).from(sandboxes).where(and(eq(sandboxes.appId, app.id), eq(sandboxes.status, 'booting')));
+  const [busy] = await db.select({ id: sandboxes.id }).from(sandboxes).where(and(eq(sandboxes.appId, app.id), eq(sandboxes.status, 'booting'), eq(sandboxes.role, role)));
   if (busy) return { error: 'A sandbox is already starting for this app.' };
-  const [row] = await db.insert(sandboxes).values({ appId: app.id, provider: process.env.SANDBOX_PROVIDER ?? (process.env.NODE_ENV === 'production' ? 'vercel' : 'local'), status: 'booting', log: [] }).returning({ id: sandboxes.id });
+  const [row] = await db.insert(sandboxes).values({ appId: app.id, role, provider: process.env.SANDBOX_PROVIDER ?? (process.env.NODE_ENV === 'production' ? 'vercel' : 'local'), status: 'booting', log: [] }).returning({ id: sandboxes.id });
   return { id: row!.id };
 }
 
@@ -98,15 +103,24 @@ export async function bootSandbox(db: DB, app: AppRow, sandboxId: string, deps: 
   try {
     const provider = deps.provider ?? sandboxProvider();
     const port = deps.port ?? (provider.name === 'local' ? await freePort() : 3000);
-    await say(`Downloading ${app.repo}…`);
-    fetched = await (deps.source ?? ((a) => fetchRepo(a.repo!, { installationId: a.installationId, all: true })))(app);
-    const files = await walk(fetched.dir);
-    await say(`${files.length} files.`);
+    const role = deps.role ?? 'new';
+    const project = (app.origin?.kind === 'blank' || app.origin?.kind === 'rebuild') && role === 'new';
+    let files: SandboxFile[];
+    if (project) {
+      files = (await projectFilesOf(db, app.id)).map((f) => ({ path: f.path, content: f.content }));
+      if (!files.length) throw new Error('This project has no files yet.');
+      await say(`${files.length} project files.`);
+    } else {
+      await say(`Downloading ${app.repo}${role === 'original' ? ' (the original, untouched)' : ''}…`);
+      fetched = await (deps.source ?? ((a) => fetchRepo(a.repo!, { installationId: a.installationId, all: true })))(app);
+      files = await walk(fetched.dir);
+      await say(`${files.length} files.`);
+    }
 
     // Overlay the integration (approved and pending), so the changes can be tried before they are approved.
     const [row] = await db.select().from(integrations).where(eq(integrations.appId, app.id)).orderBy(desc(integrations.createdAt)).limit(1);
     const applied: Applied[] = [];
-    if (row && row.status !== 'pr_opened') {
+    if (row && row.status !== 'pr_opened' && (project || role === 'new')) {
       for (const c of row.changes.filter((c) => c.status !== 'rejected')) {
         const i = files.findIndex((f) => f.path === c.file);
         if (i >= 0) files[i] = { path: c.file, content: c.content }; else files.push({ path: c.file, content: c.content });
@@ -155,8 +169,8 @@ export async function stopSandbox(db: DB, app: AppRow, sandboxId: string, provid
 }
 
 /** Stop whatever is still running for this app (one live sandbox per app). */
-export async function stopOthers(db: DB, app: AppRow, keep: string, provider?: SandboxProvider) {
-  const rows = await db.select({ id: sandboxes.id }).from(sandboxes).where(and(eq(sandboxes.appId, app.id), inArray(sandboxes.status, ['ready'])));
+export async function stopOthers(db: DB, app: AppRow, keep: string, provider?: SandboxProvider, role: 'new' | 'original' = 'new') {
+  const rows = await db.select({ id: sandboxes.id }).from(sandboxes).where(and(eq(sandboxes.appId, app.id), eq(sandboxes.role, role), inArray(sandboxes.status, ['ready'])));
   for (const r of rows) if (r.id !== keep) await stopSandbox(db, app, r.id, provider);
 }
 
@@ -195,6 +209,6 @@ export async function runChecks(db: DB, app: AppRow, sandboxId: string, deps: { 
   }
 }
 
-export function latestSandbox(db: DB, appId: string) {
-  return db.select().from(sandboxes).where(eq(sandboxes.appId, appId)).orderBy(desc(sandboxes.createdAt)).limit(1);
+export function latestSandbox(db: DB, appId: string, role: 'new' | 'original' = 'new') {
+  return db.select().from(sandboxes).where(and(eq(sandboxes.appId, appId), eq(sandboxes.role, role))).orderBy(desc(sandboxes.createdAt)).limit(1);
 }

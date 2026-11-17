@@ -2,6 +2,7 @@ import { runChecksAction, startSandboxAction, stopSandboxAction } from '../../..
 import { loadApp } from '@/lib/app-page';
 import { PLANS } from '@/lib/plans';
 import { latestSandbox, type Checks } from '@/lib/sandbox-boot';
+import { isProject } from '@/lib/project';
 import { Refresh } from '../analyze/Refresh';
 
 export const metadata = { title: 'Test sandbox' };
@@ -26,7 +27,7 @@ export default async function SandboxPage({ params, searchParams }: { params: Pr
       <p className="muted" style={{ margin: 0 }}>Your app, running in an isolated sandbox with the Entoli layer applied, so you can try it before approving anything. Changes still waiting for your approval are included: the sandbox is where you judge them. Type or speak to the bar inside each window.</p>
       {!allowed ? <p className="notice err">The test sandbox is part of the L2 plan. <a href={`/dashboard/apps/${app.id}/billing`}>See plans</a></p> : null}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <form action={startSandboxAction.bind(null, app.id)}><button className="btn primary" disabled={!allowed || !app.repo || booting}>{booting ? 'Starting…' : ready ? 'Restart the sandbox' : 'Start the test sandbox'}</button></form>
+        <form action={startSandboxAction.bind(null, app.id)}><button className="btn primary" disabled={!allowed || (!app.repo && !isProject(app)) || booting}>{booting ? 'Starting…' : ready ? 'Restart the sandbox' : 'Start the test sandbox'}</button></form>
         {ready ? <form action={runChecksAction.bind(null, app.id, sbx.id)}><button className="btn">Run the checks</button></form> : null}
         {ready ? <form action={stopSandboxAction.bind(null, app.id, sbx.id)}><button className="btn ghost">Stop it</button></form> : null}
       </div>

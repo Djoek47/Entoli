@@ -47,7 +47,7 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 - After reading the app, Entoli proposes what to put on the Entoli layer ("these five features would be simpler by voice; these two should stay manual"), says why, and sets layers (L1 / L2 / off) as the developer agrees. Uses the analyzer, the map and Claude; already half there.
 - Done when: the conversation produces the skill with per-act layers set, spoken start to finish.
 
-### 6. Blank start and copy-and-rebuild
+### 6. Blank start and copy-and-rebuild (DONE)
 - Start from empty: the developer describes the app; Entoli writes the skill first (acts, knowledge, screens) and gives their agent the instructions to build the app around it.
 - Copy an existing app: import the repo as the original, build a new project around Entoli, and compare the two (the tester runs the same map on both).
 - The original is always kept and shown beside the new one.
@@ -76,7 +76,7 @@ Each step ends with tests green, a commit, and a `STATUS.md` entry. Nothing star
 | 3 | Test sandbox windows | steps 1-2 (the agent's changes are what gets booted) | done |
 | 4 | Design-system extractor | step 3 (it looks at the running app in the sandbox) | done |
 | 5 | The proposal conversation | steps 1-4 (it talks through what the analyzer and the extractor found, and announces the agent's work) | done |
-| 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | now |
-| 7 | Launch pass | all of the above | step 6 passes its test |
+| 6 | Blank start and copy-and-rebuild | steps 2, 3, 5 (agent writes it, sandbox runs it, the conversation drives it) | done |
+| 7 | Launch pass | all of the above | now |
 
 Rules for working through it without stopping: finish a step completely (tests green, `STATUS.md` entry, commit, push) before starting the next; when a step needs an account or key that is not available, build against a provider interface with a local implementation that can be tested, mark the live path "not verified" in `STATUS.md`, and carry on; never leave a step half-wired behind a flag that pretends it works.

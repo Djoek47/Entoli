@@ -71,6 +71,16 @@ export function checkFile(raw: string, allowed: string[]): Verdict & { path?: st
   return { ...ok(), path };
 }
 
+const PROJECT_BLOCKED = /(^|\/)(node_modules|\.git|\.next|\.vercel|\.env[^/]*)(\/|$)/;
+
+/** In a project built on Entoli the agent writes the app itself, so any normal source path is allowed (never secrets, git or installed packages). */
+export function checkProjectFile(raw: string): Verdict & { path?: string } {
+  const path = normalizePath(raw);
+  if (!path) return no(`"${raw}" is not a valid project path (no absolute paths, "..", or backslashes).`);
+  if (PROJECT_BLOCKED.test(path)) return no(`"${path}" is not a file a project may hold (secrets, git data and installed packages are never part of it).`);
+  return { ...ok(), path };
+}
+
 // ---- 2 + 3. acts and contract in code ------------------------------------------------------------
 
 function litString(e: ts.Expression | undefined): string | undefined {
@@ -164,6 +174,16 @@ export function checkSkillChange(content: string, current: Skill): Verdict {
   return reasons.length ? { ok: false, reasons } : ok();
 }
 
+/** A project's package.json: valid, and no install-time scripts (they would run on the developer's machine and in the sandbox). */
+export function checkProjectPackageJson(next: string): Verdict {
+  let n: { scripts?: Record<string, string>; dependencies?: Record<string, string> };
+  try { n = JSON.parse(next); } catch (e) { return no(`package.json is not valid JSON: ${(e as Error).message}`); }
+  const bad = Object.keys(n.scripts ?? {}).filter((k) => ['preinstall', 'install', 'postinstall', 'prepare'].includes(k));
+  if (bad.length) return no(`package.json has install-time scripts (${bad.join(', ')}). They run on install, so they are not allowed.`);
+  if (!n.scripts?.dev && !n.scripts?.start) return ok(['package.json has no "dev" or "start" script, so the sandbox cannot start the project.']);
+  return ok();
+}
+
 // ---- 4. packages -----------------------------------------------------------------------------------------
 
 /** package.json may only gain @entoli/sdk: everything else byte-for-byte equal in meaning. */
@@ -193,12 +213,12 @@ function sortKeys(v: unknown): unknown {
 }
 
 /** Everything that applies to one submitted file. */
-export function checkSubmission(input: { path: string; content: string; base: string | null; skill: Skill }): Verdict {
+export function checkSubmission(input: { path: string; content: string; base: string | null; skill: Skill; project?: boolean }): Verdict {
   const { path, content, base, skill } = input;
   if (Buffer.byteLength(content) > MAX_FILE_BYTES) return no(`The file is over ${MAX_FILE_BYTES / 1000} kB.`);
   const name = path.split('/').pop()!;
   if (name === 'entoli.skill.json') return checkSkillChange(content, skill);
-  if (name === 'package.json') return checkPackageJson(base, content);
+  if (name === 'package.json') return input.project ? checkProjectPackageJson(content) : checkPackageJson(base, content);
   if (/\.(tsx?|jsx?|mjs)$/.test(path)) {
     const syntax = ts.transpileModule(content, { fileName: path, reportDiagnostics: true, compilerOptions: { jsx: ts.JsxEmit.Preserve, target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).diagnostics ?? [];
     if (syntax.length) return no(`${path} does not parse: ${ts.flattenDiagnosticMessageText(syntax[0]!.messageText, ' ')}`);

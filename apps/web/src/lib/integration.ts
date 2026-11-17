@@ -20,7 +20,7 @@ import { createTwoFilesPatch } from 'diff';
 import { and, desc, eq } from 'drizzle-orm';
 import ts from 'typescript';
 import type { DB } from '@/db';
-import { analyses, integrations, type IntegrationChange } from '@/db/schema';
+import { analyses, apps, integrations, type IntegrationChange } from '@/db/schema';
 import { skillOf } from './apps';
 import { gh, installationToken } from './github';
 import { PLANS } from './plans';
@@ -382,6 +382,15 @@ export async function setChangeStatus(db: DB, integrationId: string, changeId: s
   if (!row || row.status === 'pr_opened') return;
   const changes = row.changes.map((c) => (c.id === changeId ? { ...c, status } : c));
   await db.update(integrations).set({ changes }).where(eq(integrations.id, integrationId));
+  // In a project built on Entoli there is no repository to open a pull request on: approving writes the file into the project.
+  if (status === 'approved') {
+    const change = row.changes.find((c) => c.id === changeId);
+    const [app] = await db.select({ origin: apps.origin }).from(apps).where(eq(apps.id, row.appId));
+    if (change && app && (app.origin?.kind === 'blank' || app.origin?.kind === 'rebuild')) {
+      const { writeProjectFile } = await import('./project');
+      await writeProjectFile(db, row.appId, change.file, change.content);
+    }
+  }
 }
 
 // ---- the pull request -------------------------------------------------------------------

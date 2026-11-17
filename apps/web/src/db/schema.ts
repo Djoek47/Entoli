@@ -31,6 +31,8 @@ export const apps = pgTable('apps', {
   skill: jsonb('skill'),
   skillStatus: text('skill_status').$type<'none' | 'draft' | 'published'>().notNull().default('none'),
   previewUrl: text('preview_url'),
+  /** Where this app came from: an existing repo (default), a blank start, or a rebuild of an existing app on Entoli (the original stays in `repo`). */
+  origin: jsonb('origin').$type<{ kind: 'existing' | 'blank' | 'rebuild'; description?: string }>(),
   /** The latest "what should Entoli take over?" proposal, and what accepting it changed. */
   proposal: jsonb('proposal').$type<{ items: unknown[]; spoken: string; createdAt: string; applied?: Record<string, string | null> }>(),
   /** The app's design system: what was extracted from the code and from the running app, plus the tweaks applied on top. */
@@ -165,6 +167,8 @@ export const sandboxes = pgTable('sandboxes', {
   provider: text('provider').notNull(),
   remoteId: text('remote_id'),
   url: text('url'),
+  /** 'new' is the app being built; 'original' is the app it was copied from (kept for comparison). */
+  role: text('role').$type<'new' | 'original'>().notNull().default('new'),
   status: text('status').$type<'booting' | 'ready' | 'failed' | 'stopped'>().notNull().default('booting'),
   log: jsonb('log').$type<string[]>().notNull().default([]),
   /** Which integration changes were applied, and whether each was still waiting for approval. */
@@ -175,3 +179,12 @@ export const sandboxes = pgTable('sandboxes', {
   createdAt: created(),
   expiresAt: timestamp('expires_at', { withTimezone: true }),
 }, (t) => [index('sandboxes_app').on(t.appId, t.createdAt)]);
+
+/** The files of a project built on Entoli (blank start or rebuild). Nothing here is in any repository until exported. */
+export const projectFiles = pgTable('project_files', {
+  id: id(),
+  appId: text('app_id').notNull().references(() => apps.id, { onDelete: 'cascade' }),
+  path: text('path').notNull(),
+  content: text('content').notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex('project_files_path').on(t.appId, t.path)]);

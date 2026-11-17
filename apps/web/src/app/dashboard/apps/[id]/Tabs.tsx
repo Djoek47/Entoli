@@ -2,7 +2,7 @@
 import { usePathname } from 'next/navigation';
 
 export const TABS = [
-  ['analyze', 'Analyze'], ['map', 'Map'], ['knowledge', 'Knowledge'], ['skill', 'Skill'], ['keys', 'Keys'],
+  ['project', 'Project'], ['analyze', 'Analyze'], ['map', 'Map'], ['knowledge', 'Knowledge'], ['skill', 'Skill'], ['keys', 'Keys'],
   ['usage', 'Usage'], ['billing', 'Billing'], ['design', 'Design'], ['integrate', 'Guided integration'], ['sandbox', 'Test sandbox'], ['test', 'Test'],
 ] as const;
 

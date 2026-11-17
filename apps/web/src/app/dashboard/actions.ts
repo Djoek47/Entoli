@@ -22,6 +22,52 @@ export async function createAppAction(form: FormData) {
   redirect(`/dashboard/apps/${id}/map`);
 }
 
+export async function startProjectAction(form: FormData) {
+  const user = await requireUser();
+  const db = await getDb();
+  const how = String(form.get('how') ?? 'blank');
+  let id: string;
+  try {
+    const { startBlank, startRebuild } = await import('@/lib/project');
+    const { parseRepo } = await import('@/lib/apps');
+    const name = String(form.get('name') ?? '');
+    if (how === 'rebuild') {
+      const repo = parseRepo(String(form.get('repo') ?? ''));
+      if (!repo) throw new Error('Choose the original repository (owner/name).');
+      id = (await startRebuild(db, user.id, { name, repo })).appId;
+    } else {
+      id = (await startBlank(db, user.id, { name, description: String(form.get('description') ?? '') })).appId;
+    }
+  } catch (e) {
+    redirect(`/dashboard?error=${q((e as Error).message)}`);
+  }
+  redirect(`/dashboard/apps/${id}/project`);
+}
+
+export async function startOriginalSandboxAction(appId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { queueSandbox, bootSandbox, stopOthers } = await import('@/lib/sandbox-boot');
+  const qd = await queueSandbox(db, app, 'original');
+  if ('error' in qd) redirect(`/dashboard/apps/${appId}/project?error=${q(qd.error)}`);
+  const { after } = await import('next/server');
+  after(async () => { await stopOthers(db, app, qd.id, undefined, 'original'); await bootSandbox(db, app, qd.id, { role: 'original' }); });
+  redirect(`/dashboard/apps/${appId}/project`);
+}
+
+export async function checkOriginalAction(appId: string, sandboxId: string) {
+  const user = await requireUser();
+  const db = await getDb();
+  const app = await getApp(db, user.id, appId);
+  if (!app) redirect('/dashboard');
+  const { runChecks } = await import('@/lib/sandbox-boot');
+  try { await runChecks(db, app, sandboxId); }
+  catch (e) { redirect(`/dashboard/apps/${appId}/project?error=${q((e as Error).message)}`); }
+  revalidatePath(`/dashboard/apps/${appId}/project`);
+}
+
 export async function deleteAppAction(appId: string) {
   const user = await requireUser();
   await deleteApp(await getDb(), user.id, appId);

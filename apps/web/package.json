@@ -15,6 +15,7 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",
     "@entoli/analyzer": "workspace:*",
+    "@entoli/design": "workspace:*",
     "@entoli/sdk": "workspace:*",
     "@entoli/tester": "workspace:*",
     "@neondatabase/serverless": "^1.2.0",
@@ -22,13 +23,13 @@
     "@vercel/sandbox": "^4.0.0",
     "diff": "^8.0.4",
     "drizzle-orm": "^0.45.4",
+    "fflate": "^0.8.3",
     "next": "^16.4.5",
     "next-auth": "5.0.0-beta.32",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "stripe": "^23.1.0",
-    "tar": "^7.5.22",
-    "@entoli/design": "workspace:*"
+    "tar": "^7.5.22"
   },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",
