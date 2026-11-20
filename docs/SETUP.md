@@ -15,6 +15,16 @@ Everything below is an account, a key or a decision only you can make. Nothing i
 9. **Test sandbox**: on Vercel the OIDC token is automatic (`SANDBOX_PROVIDER` defaults to `vercel` in production). Elsewhere set `VERCEL_TOKEN`, `VERCEL_TEAM_ID`, `VERCEL_PROJECT_ID`. The local provider is refused in production.
 10. **Hosted browser for the checks** (map walk, phrase checks in the dashboard): a Playwright-compatible Chromium endpoint (Browserbase, Browserless, or your own) → `BROWSER_WS_ENDPOINT`.
 
+## Check it all with one command
+
+Once the keys are in your environment (`vercel env pull .env.local` then `set -a; . apps/web/.env.local; set +a`), run:
+
+```bash
+pnpm --filter @entoli/web smoke
+```
+
+It checks the database and migrations, both GitHub credentials, Claude, Stripe (prices, meters, webhook endpoint), OpenAI Realtime (mints a key), the Vercel Sandbox (boots one, runs node, stops it), the hosted browser and the cron route. Each line is PASS, FAIL with the reason, or SKIP (keys not set). It never charges anything and never prints a secret.
+
 ## Optional
 
 - Tuning: `VOICE_TOOL_TURNS` (300), `VOICE_LIVE_MINUTES` (120), `INTENT_RATE_PER_MIN` (120), `ANALYSIS_MAX_INPUT_TOKENS`, `ANALYSIS_MAX_OUTPUT_TOKENS`.
