@@ -204,6 +204,16 @@ export async function startBlank(db: DB, ownerId: string, input: { name: string;
   return { appId: app.id, drafted, ...(note ? { note } : {}), files: (await projectFilesOf(db, app.id)).length };
 }
 
+/** The folder an app lives in: the repository root, or a folder inside it (a monorepo's app). Never outside the checkout. */
+export async function appRoot(dir: string, subdir: string | null | undefined): Promise<string> {
+  if (!subdir) return dir;
+  const { stat, realpath } = await import('node:fs/promises');
+  const want = join(dir, subdir);
+  const [real, base] = await Promise.all([realpath(want).catch(() => null), realpath(dir)]);
+  if (!real || !real.startsWith(base) || !(await stat(real)).isDirectory()) throw new Error(`The folder "${subdir}" does not exist in the repository.`);
+  return real;
+}
+
 /** Source files (text, within limits) from a fetched repository. */
 async function readSource(f: Fetched): Promise<{ path: string; content: string }[]> {
   const { readdir, stat } = await import('node:fs/promises');
@@ -226,15 +236,16 @@ async function readSource(f: Fetched): Promise<{ path: string; content: string }
   return out;
 }
 
-export async function startRebuild(db: DB, ownerId: string, input: { name: string; repo: string }, deps: { source?: (repo: string) => Promise<Fetched> } = {}) {
-  const { app } = await createApp(db, ownerId, { name: input.name, repo: input.repo });
+export async function startRebuild(db: DB, ownerId: string, input: { name: string; repo: string; subdir?: string | null }, deps: { source?: (repo: string) => Promise<Fetched> } = {}) {
+  const { app } = await createApp(db, ownerId, { name: input.name, repo: input.repo, subdir: input.subdir ?? null });
   if (!app.repo) throw new Error('Choose the original repository to rebuild.');
   await db.update(apps).set({ origin: { kind: 'rebuild' } }).where(eq(apps.id, app.id));
   let fetched: Fetched | null = null;
   try {
     fetched = await (deps.source ?? ((r) => fetchRepo(r, { all: true })))(app.repo);
-    const files = await readSource(fetched);
-    if (!files.some((f) => f.path === 'package.json')) throw new Error('The original has no package.json at its root, so it cannot be copied into a project yet.');
+    const root = await appRoot(fetched.dir, app.subdir);
+    const files = await readSource({ ...fetched, dir: root });
+    if (!files.some((f) => f.path === 'package.json')) throw new Error(`The original has no package.json ${app.subdir ? `in ${app.subdir}` : 'at its root'}, so it cannot be copied into a project.`);
     for (const f of files) await writeProjectFile(db, app.id, f.path, f.content);
     return { appId: app.id, files: files.length };
   } catch (e) {

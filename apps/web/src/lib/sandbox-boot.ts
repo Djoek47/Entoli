@@ -22,7 +22,7 @@ import { apps, integrations, sandboxes, testRuns } from '@/db/schema';
 import { fetchRepo, type Fetched } from './repo-fetch';
 import { freePort, sandboxProvider, SANDBOX_TIMEOUT_MS, type Sandbox, type SandboxFile, type SandboxProvider } from './sandbox';
 import { hit } from './ratelimit';
-import { projectFilesOf } from './project';
+import { appRoot, projectFilesOf } from './project';
 import { PLANS } from './plans';
 
 type AppRow = typeof apps.$inferSelect;
@@ -77,10 +77,13 @@ export type Stack = { install: [string, string[]] | null; dev: [string, string[]
 export function detectStack(files: SandboxFile[], port: number): Stack {
   const text = (p: string) => { const f = files.find((x) => x.path === p); return f ? Buffer.from(f.content).toString('utf8') : null; };
   const pkgText = text('package.json');
-  if (!pkgText) throw new Error('This repository has no package.json at its root, so Entoli cannot start it in a sandbox yet (monorepo sub-apps are a later addition).');
+  if (!pkgText) throw new Error('This app has no package.json at its root, so Entoli cannot start it in a sandbox. In a monorepo, connect the folder of the app, like owner/name#apps/web.');
   let pkg: { scripts?: Record<string, string>; dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
   try { pkg = JSON.parse(pkgText); } catch { throw new Error('package.json is not valid JSON.'); }
   const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+  // Packages that live elsewhere in the same monorepo cannot be installed from a registry.
+  const local = Object.entries(deps).filter(([, v]) => /^(workspace:|link:|file:\.\.|portal:)/.test(String(v))).map(([k]) => k);
+  if (local.length) throw new Error(`This app depends on packages inside its own monorepo (${local.slice(0, 4).join(', ')}${local.length > 4 ? ', …' : ''}), which a sandbox cannot install from a registry. Run it from the monorepo's own tooling, or point Entoli at an app that installs on its own.`);
   const has = (p: string) => files.some((f) => f.path === p);
   const install: Stack['install'] = has('pnpm-lock.yaml') ? ['npx', ['--yes', 'pnpm', 'install', '--no-frozen-lockfile']]
     : has('yarn.lock') ? ['npx', ['--yes', 'yarn', 'install']]
@@ -113,7 +116,7 @@ export async function bootSandbox(db: DB, app: AppRow, sandboxId: string, deps: 
     } else {
       await say(`Downloading ${app.repo}${role === 'original' ? ' (the original, untouched)' : ''}…`);
       fetched = await (deps.source ?? ((a) => fetchRepo(a.repo!, { installationId: a.installationId, all: true })))(app);
-      files = await walk(fetched.dir);
+      files = await walk(await appRoot(fetched.dir, app.subdir));
       await say(`${files.length} files.`);
     }
 

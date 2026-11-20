@@ -42,18 +42,42 @@ export function parseRepo(input: string): string | null {
   return REPO.test(s) ? s : null;
 }
 
-export async function createApp(db: DB, ownerId: string, input: { name: string; repo?: string | null }) {
+/** "owner/name", "owner/name#apps/web", or a github.com/owner/name/tree/main/apps/web URL → the repository and the folder inside it. */
+export function parseRepoSpec(input: string): { repo: string; subdir: string | null } | null {
+  const raw = input.trim();
+  let subdir: string | null = null;
+  let base = raw;
+  const hash = raw.indexOf('#');
+  if (hash >= 0) { base = raw.slice(0, hash); subdir = raw.slice(hash + 1); }
+  else {
+    const m = /^(?:https?:\/\/)?github\.com\/([^/]+\/[^/]+)\/tree\/[^/]+\/(.+)$/.exec(raw);
+    if (m) { base = m[1]!; subdir = m[2]!; }
+  }
+  const repo = parseRepo(base);
+  if (!repo) return null;
+  if (subdir !== null) {
+    const parts = subdir.split('/').filter((x) => x && x !== '.');
+    if (parts.some((x) => x === '..' || /[\\\0]/.test(x))) return null;
+    subdir = parts.join('/') || null;
+  }
+  return { repo, subdir };
+}
+
+export async function createApp(db: DB, ownerId: string, input: { name: string; repo?: string | null; subdir?: string | null }) {
   const name = input.name.trim().slice(0, 80);
   if (!name) throw new Error('Give the app a name.');
   let repo: string | null = null;
+  let subdir: string | null = null;
   if (input.repo && input.repo.trim()) {
-    repo = parseRepo(input.repo);
-    if (!repo) throw new Error('Repository must look like owner/name or a github.com URL.');
+    const spec = parseRepoSpec(input.repo);
+    if (!spec) throw new Error('Repository must look like owner/name (or owner/name#folder) or a github.com URL.');
+    repo = spec.repo;
+    subdir = input.subdir ?? spec.subdir;
   }
   const existing = await listApps(db, ownerId);
   // The free plan covers one app; further apps start on the free plan too but
   // are flagged until upgraded (enforced at /api/intent).
-  const [row] = await db.insert(apps).values({ ownerId, name, repo }).returning();
+  const [row] = await db.insert(apps).values({ ownerId, name, repo, subdir }).returning();
   return { app: row!, overFreeLimit: existing.filter((a) => a.plan === 'developer').length >= (PLANS.developer.maxApps ?? 1) };
 }
 
@@ -61,8 +85,9 @@ export async function deleteApp(db: DB, ownerId: string, appId: string) {
   await db.delete(apps).where(and(eq(apps.id, appId), eq(apps.ownerId, ownerId)));
 }
 
-export async function setRepo(db: DB, ownerId: string, appId: string, repo: string | null, installationId?: string | null) {
+export async function setRepo(db: DB, ownerId: string, appId: string, repo: string | null, installationId?: string | null, subdir?: string | null) {
   const set: Partial<typeof apps.$inferInsert> = { repo };
+  if (subdir !== undefined) set.subdir = subdir;
   if (installationId !== undefined) set.installationId = installationId;
   await db.update(apps).set(set).where(and(eq(apps.id, appId), eq(apps.ownerId, ownerId)));
 }

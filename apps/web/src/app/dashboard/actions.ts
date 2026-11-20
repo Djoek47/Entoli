@@ -29,12 +29,12 @@ export async function startProjectAction(form: FormData) {
   let id: string;
   try {
     const { startBlank, startRebuild } = await import('@/lib/project');
-    const { parseRepo } = await import('@/lib/apps');
+    const { parseRepoSpec } = await import('@/lib/apps');
     const name = String(form.get('name') ?? '');
     if (how === 'rebuild') {
-      const repo = parseRepo(String(form.get('repo') ?? ''));
-      if (!repo) throw new Error('Choose the original repository (owner/name).');
-      id = (await startRebuild(db, user.id, { name, repo })).appId;
+      const spec = parseRepoSpec(String(form.get('repo') ?? ''));
+      if (!spec) throw new Error('Choose the original repository (owner/name, or owner/name#folder for an app inside a monorepo).');
+      id = (await startRebuild(db, user.id, { name, repo: spec.repo, subdir: spec.subdir })).appId;
     } else {
       id = (await startBlank(db, user.id, { name, description: String(form.get('description') ?? '') })).appId;
     }
@@ -86,11 +86,11 @@ export async function deleteAppAction(appId: string) {
 export async function setRepoAction(appId: string, form: FormData) {
   const user = await requireUser();
   const db = await getDb();
-  const { parseRepo } = await import('@/lib/apps');
-  const repo = parseRepo(String(form.get('repo') ?? ''));
-  if (!repo) redirect(`/dashboard/apps/${appId}/map?error=${q('Repository must look like owner/name.')}`);
+  const { parseRepoSpec } = await import('@/lib/apps');
+  const spec = parseRepoSpec(String(form.get('repo') ?? ''));
+  if (!spec) redirect(`/dashboard/apps/${appId}/map?error=${q('Repository must look like owner/name, or owner/name#folder for an app inside a monorepo.')}`);
   const app = await getApp(db, user.id, appId);
-  await setRepo(db, user.id, appId, repo, app?.repo === repo ? app.installationId : null);
+  await setRepo(db, user.id, appId, spec.repo, app?.repo === spec.repo ? app.installationId : null, spec.subdir);
   revalidatePath(`/dashboard/apps/${appId}`);
 }
 

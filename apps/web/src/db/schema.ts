@@ -22,6 +22,8 @@ export const apps = pgTable('apps', {
   ownerId: text('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   name: text('name').notNull(),
   repo: text('repo'),
+  /** A folder inside the repository (a monorepo's app): the sandbox and the rebuild start there. */
+  subdir: text('subdir'),
   installationId: text('installation_id'),
   plan: text('plan').$type<PlanId>().notNull().default('developer'),
   /** One Stripe customer per app: meters aggregate per customer, so apps never share usage. */

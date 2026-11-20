@@ -257,3 +257,43 @@ describe('starting by voice, and what it costs', () => {
     expect(a.phrases).toContain('start a new project');
   });
 });
+
+describe('monorepos: an app inside a folder', () => {
+  it('parses owner/name#folder and github tree URLs, and refuses ways out of the checkout', async () => {
+    const { parseRepoSpec } = await import('@/lib/apps');
+    expect(parseRepoSpec('acme/mono#apps/web')).toEqual({ repo: 'acme/mono', subdir: 'apps/web' });
+    expect(parseRepoSpec('https://github.com/acme/mono/tree/main/apps/web')).toEqual({ repo: 'acme/mono', subdir: 'apps/web' });
+    expect(parseRepoSpec('acme/mono')).toEqual({ repo: 'acme/mono', subdir: null });
+    expect(parseRepoSpec('acme/mono#../etc')).toBeNull();
+    expect(parseRepoSpec('nope')).toBeNull();
+  });
+
+  it('copies only the folder, and says when it does not exist', async () => {
+    const u = await user();
+    const dir = await mkdtemp(join(tmpdir(), 'entoli-mono-'));
+    cleanups.push(dir);
+    for (const [p, c] of Object.entries({ 'package.json': '{"name":"root"}', 'apps/web/package.json': '{"name":"web","scripts":{"dev":"node s.mjs"}}', 'apps/web/index.html': '<p>web</p>', 'apps/api/server.js': 'x' })) { await mkdir(join(dir, p, '..'), { recursive: true }); await writeFile(join(dir, p), c); }
+    const source = async () => ({ dir, bytes: 1, cleanup: async () => {} });
+    const r = await startRebuild(db, u.id, { name: 'Web', repo: 'acme/mono', subdir: 'apps/web' }, { source });
+    expect((await projectFilesOf(db, r.appId)).map((f) => f.path)).toEqual(['index.html', 'package.json']);
+    expect((await getApp(db, u.id, r.appId))!.subdir).toBe('apps/web');
+    await expect(startRebuild(db, u.id, { name: 'Gone', repo: 'acme/mono', subdir: 'apps/nope' }, { source })).rejects.toThrow(/does not exist in the repository/);
+    await expect(startRebuild(db, u.id, { name: 'Esc', repo: 'acme/mono', subdir: '../..' }, { source })).rejects.toThrow();
+  });
+
+  // Opt-in, needs the network: ENTOLI_REAL_REPO=1. This repo's notes app uses a workspace dependency, so it must fail CLEARLY.
+  it.skipIf(!process.env.ENTOLI_REAL_REPO)('REAL: the notes app inside this very repository is found in its folder, and the sandbox explains why it cannot run alone', async () => {
+    const u = await user();
+    const r = await startRebuild(db, u.id, { name: 'Real', repo: 'Djoek47/entoli', subdir: 'examples/notes-app' });
+    await l2(r.appId);
+    const app = (await getApp(db, u.id, r.appId))!;
+    expect(r.files).toBeGreaterThan(5);
+    const q = await queueSandbox(db, app, 'original');
+    if ('error' in q) throw new Error(q.error);
+    await bootSandbox(db, app, q.id, { provider, role: 'original' });
+    const { sandboxes } = await import('@/db/schema');
+    const [row] = await db.select().from(sandboxes).where(eq(sandboxes.id, q.id));
+    expect(row!.status).toBe('failed');
+    expect(row!.error).toMatch(/inside its own monorepo \(@entoli\/sdk\)/);
+  }, 600_000);
+});

@@ -66,6 +66,13 @@ async function setup() {
   return { user: u, app: (await getApp(db, u.id, app.id))! };
 }
 
+describe('detectStack: monorepo-local dependencies', () => {
+  it('says so, instead of failing inside npm install', () => {
+    const f = [{ path: 'package.json', content: JSON.stringify({ scripts: { dev: 'vite' }, dependencies: { '@acme/ui': 'workspace:*', react: '18' } }) }];
+    expect(() => detectStack(f, 3000)).toThrow(/depends on packages inside its own monorepo \(@acme\/ui\)/);
+  });
+});
+
 describe('detectStack', () => {
   const f = (o: Record<string, string>) => Object.entries(o).map(([path, content]) => ({ path, content }));
   it('picks the package manager and the right dev command for the framework', () => {
