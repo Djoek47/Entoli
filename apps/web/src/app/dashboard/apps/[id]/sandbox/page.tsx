@@ -3,6 +3,7 @@ import { loadApp } from '@/lib/app-page';
 import { PLANS } from '@/lib/plans';
 import { latestSandbox, type Checks } from '@/lib/sandbox-boot';
 import { isProject } from '@/lib/project';
+import { explainFailure } from '@/lib/sandbox-hints';
 import { Refresh } from '../analyze/Refresh';
 
 export const metadata = { title: 'Test sandbox' };
@@ -41,7 +42,11 @@ export default async function SandboxPage({ params, searchParams }: { params: Pr
             {ready ? <a className="btn small" href={sbx.url!} target="_blank" rel="noreferrer">Open in a tab</a> : null}
           </div>
           <pre tabIndex={0} className="block" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{sbx.log.map((l) => `› ${l}`).join('\n')}</pre>
-          {sbx.error ? <p className="notice err" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{sbx.error}</p> : null}
+          {sbx.error ? (() => { const h = explainFailure(sbx.error); return (
+            <div className="notice err" role="alert" style={{ margin: 0 }}>
+              {h ? <p style={{ margin: 0 }}><strong>{h.what}</strong> {h.fix}</p> : null}
+              <details><summary>Technical detail</summary><pre tabIndex={0} style={{ whiteSpace: 'pre-wrap', margin: '6px 0 0' }}>{sbx.error}</pre></details>
+            </div>); })() : null}
           {sbx.applied?.length ? (
             <div>
               <strong>Applied in this sandbox</strong>

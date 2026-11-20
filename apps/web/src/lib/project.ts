@@ -266,12 +266,12 @@ export async function exportZip(db: DB, appId: string): Promise<Uint8Array> {
 
 // ---- compare ----------------------------------------------------------------------------------------------------------------------
 
-export type Side = { role: 'new' | 'original'; sandboxId: string | null; status: string; url: string | null; walkCoverage: number | null; phrasePercent: number | null; broken: number; checkedAt: string | null };
+export type Side = { role: 'new' | 'original'; sandboxId: string | null; status: string; url: string | null; walkCoverage: number | null; phrasePercent: number | null; broken: number; checkedAt: string | null; error: string | null };
 export type Comparison = { original: Side; rebuilt: Side; verdict: string };
 
 const side = (role: Side['role'], r: typeof sandboxes.$inferSelect | undefined): Side => {
   const c = r?.results as { at: string; walk: { coverage: number; broken: unknown[] } | null; summary: { percent: number } } | null | undefined;
-  return { role, sandboxId: r?.id ?? null, status: r?.status ?? 'none', url: r?.status === 'ready' ? r.url : null, walkCoverage: c?.walk?.coverage ?? null, phrasePercent: c?.summary?.percent ?? null, broken: c?.walk?.broken.length ?? 0, checkedAt: c?.at ?? null };
+  return { role, sandboxId: r?.id ?? null, status: r?.status ?? 'none', url: r?.status === 'ready' ? r.url : null, walkCoverage: c?.walk?.coverage ?? null, phrasePercent: c?.summary?.percent ?? null, broken: c?.walk?.broken.length ?? 0, checkedAt: c?.at ?? null, error: r?.status === 'failed' ? (r.error ?? 'failed') : null };
 };
 
 /** The latest sandbox of each role and what the same checks found on both. Both sides are judged by the same map and the same phrases. */

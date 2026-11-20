@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import { integrations } from '@/db/schema';
 import { loadApp } from '@/lib/app-page';
 import { getUsage } from '@/lib/apps';
+import { checklist } from '@/lib/checklist';
 import { PLANS } from '@/lib/plans';
 import { latestSandbox } from '@/lib/sandbox-boot';
 import { StudioBar } from './StudioBar';
@@ -14,12 +15,27 @@ export default async function AppLayout({ children, params }: { children: React.
   const [latest] = await db.select().from(integrations).where(eq(integrations.appId, app.id)).orderBy(desc(integrations.createdAt)).limit(1);
   const usage = await getUsage(db, app.id);
   const [sbx] = await latestSandbox(db, app.id);
+  const progress = await checklist(db, app);
   const voiceTool = plan.voiceToolTurns > 0 && (process.env.NODE_ENV !== 'production' || app.subscriptionStatus === 'active' || app.subscriptionStatus === 'trialing' || app.subscriptionStatus === 'past_due');
   return (
     <div>
       <div className="kicker"><a href="/dashboard">Apps</a> / {plan.name}</div>
       <h1>{app.name}</h1>
       <div className="muted mono">{app.repo ?? 'no repository'} {app.installationId ? '· connected (read-only)' : ''}</div>
+      {progress.next ? (
+        <details className="card" style={{ margin: '12px 0' }} open={progress.doneCount < 3}>
+          <summary><strong>Getting started</strong> <span className="muted">· {progress.doneCount} of {progress.steps.length} · next: <a href={progress.next.href}>{progress.next.title}</a></span></summary>
+          <ol style={{ margin: '10px 0 0', paddingLeft: 20 }}>
+            {progress.steps.map((st) => (
+              <li key={st.id} style={{ margin: '4px 0' }}>
+                <span aria-label={st.done ? 'done' : 'to do'}>{st.done ? '✓' : '○'}</span>{' '}
+                {st.done ? <span className="muted">{st.title}</span> : <a href={st.href}><strong>{st.title}</strong></a>}
+                {!st.done && st.id === progress.next?.id ? <div className="muted">{st.hint}</div> : null}
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
       <Tabs id={app.id} />
       {children}
       <StudioBar

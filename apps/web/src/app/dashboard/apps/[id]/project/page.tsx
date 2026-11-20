@@ -2,6 +2,7 @@ import { checkOriginalAction, runChecksAction, startOriginalSandboxAction, start
 import { loadApp } from '@/lib/app-page';
 import { PLANS } from '@/lib/plans';
 import { compare, isProject, projectFilesOf, type Side } from '@/lib/project';
+import { explainFailure } from '@/lib/sandbox-hints';
 import { Refresh } from '../analyze/Refresh';
 
 export const metadata = { title: 'Project' };
@@ -18,6 +19,7 @@ function SideCard({ title, side, appId, original }: { title: string; side: Side;
         <span className={`pill ${ready ? 'ok' : side.status === 'failed' ? 'warn' : ''}`}>{side.status === 'none' ? 'not started' : side.status}</span>
       </div>
       <div className="muted">Screens reached: <strong>{pct(side.walkCoverage)}</strong> · phrases understood: <strong>{pct(side.phrasePercent)}</strong>{side.broken ? ` · ${side.broken} broken` : ''}</div>
+      {side.error ? (() => { const h = explainFailure(side.error); return <p className="notice err" role="alert" style={{ margin: 0 }}><strong>{h?.what}</strong> {h?.fix}</p>; })() : null}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {ready ? <a className="btn small" href={side.url!} target="_blank" rel="noreferrer">Open</a> : null}
         {ready ? <form action={(original ? checkOriginalAction : runChecksAction).bind(null, appId, side.sandboxId!)}><button className="btn small">Run the checks</button></form> : null}
