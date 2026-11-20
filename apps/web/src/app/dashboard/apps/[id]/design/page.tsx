@@ -78,7 +78,7 @@ export default async function DesignPage({ params, searchParams }: { params: Pro
             <p className="muted" style={{ margin: 0 }}>Applied: {stored.tweaks.map((t) => `“${t}”`).join(', ')}. <form action={resetDesignTweaksAction.bind(null, app.id)} style={{ display: 'inline' }}><button className="btn small ghost">Undo all</button></form></p>
           ) : null}
 
-          <table><thead><tr><th>Token</th><th /><th>Value</th><th>Where it came from</th></tr></thead>
+          <table><thead><tr><th>Token</th><th><span className="sr-only">Actions</span></th><th>Value</th><th>Where it came from</th></tr></thead>
             <tbody>{rows(tokens).map(([key, label, value, swatch]) => (
               <tr key={key}><td>{label}</td><td style={{ width: 28 }}>{swatch ? <span style={{ display: 'inline-block', width: 20, height: 20, borderRadius: 4, background: swatch, border: '1px solid var(--line)' }} /> : null}</td>
                 <td className="mono">{value}</td><td className="muted">{tokens.sources[key] === 'default' ? <span className="pill">not found: Entoli's own</span> : tokens.sources[key] ?? ''}</td></tr>

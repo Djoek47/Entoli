@@ -37,7 +37,7 @@ export default async function BillingPage({ params, searchParams }: { params: Pr
           return (
             <div key={id} className="card stack" style={isCurrent ? { borderColor: 'var(--lime)' } : undefined}>
               <div className="kicker">{p.ai ? 'Skill + integration' : 'Skill'}</div>
-              <h3 style={{ margin: 0 }}>{p.name}</h3>
+              <h2 className="sub"  style={{ margin: 0 }}>{p.name}</h2>
               <div className="mono">{p.priceUsd === 0 ? '$0' : `$${p.priceUsd} / app / month`}</div>
               <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
                 {planFeatures(p).map((f) => <li key={f}>{f}</li>)}

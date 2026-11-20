@@ -12,13 +12,13 @@ export default async function KnowledgePage({ params, searchParams }: { params: 
       {sp.error ? <p className="notice err">{sp.error}</p> : null}
       {!skill ? <div className="empty">No skill yet. <a href={`/dashboard/apps/${app.id}/analyze`}>Analyze</a> first.</div> : (
         <>
-          <table><thead><tr><th>Topic</th><th>Can?</th><th>Answer</th><th /></tr></thead>
+          <table><thead><tr><th>Topic</th><th>Can?</th><th>Answer</th><th><span className="sr-only">Actions</span></th></tr></thead>
             <tbody>{skill.knowledge.map((k, i) => (
               <tr key={i}><td>{k.topic}</td><td><span className={`pill ${k.can ? 'ok' : 'warn'}`}>{k.can ? 'can' : "can't"}</span></td><td>{k.answer}</td>
                 <td><form action={removeKnowledgeAction.bind(null, app.id, i)}><button className="btn small ghost" aria-label={`Remove ${k.topic}`}>Remove</button></form></td></tr>
             ))}</tbody></table>
           <form action={addKnowledgeAction.bind(null, app.id)} className="card stack">
-            <h3 style={{ margin: 0 }}>Teach it something</h3>
+            <h2 className="sub"  style={{ margin: 0 }}>Teach it something</h2>
             <div className="row">
               <label>Topic<input name="topic" required placeholder="export to PDF" /></label>
               <label style={{ maxWidth: 140 }}>Can it?<select name="can"><option value="yes">Yes</option><option value="no">No</option></select></label>

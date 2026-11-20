@@ -17,7 +17,7 @@ export default async function SkillPage({ params, searchParams }: { params: Prom
       {sp.error ? <p className="notice err">{sp.error}</p> : null}
       <p className="muted" style={{ margin: 0 }}>This is <code>entoli.skill.json</code>. Commit it next to your app and pass it to <code>mount()</code>. Only valid skills are saved; slot types are a closed set: choice, quantity, when, person, freeText.</p>
       <section className="card stack">
-        <h3 style={{ margin: 0 }}>Hand it to your coding agent</h3>
+        <h2 className="sub"  style={{ margin: 0 }}>Hand it to your coding agent</h2>
         <p className="muted" style={{ margin: 0 }}>Already working with Claude Code, Cursor or another agent? Download the skill as a file it understands, put it in your repository, and ask it to integrate Entoli. It carries the skill, where each act lives in your code, and how to wire it.</p>
         {PLANS[app.plan].priceUsd > 0 ? (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

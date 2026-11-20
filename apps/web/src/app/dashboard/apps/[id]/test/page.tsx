@@ -22,7 +22,7 @@ export default async function TestPage({ params, searchParams }: { params: Promi
       </form>
       <details className="card">
         <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Run it in CI instead</summary>
-        <pre className="block" style={{ marginTop: 10 }}>{`npx entoli-test entoli.skill.json $PREVIEW_URL --min 90 \\
+        <pre tabIndex={0} className="block" style={{ marginTop: 10 }}>{`npx entoli-test entoli.skill.json $PREVIEW_URL --min 90 \\
   --upload https://entoli.dev --key $ENTOLI_KEY`}</pre>
         <p className="muted" style={{ margin: 0 }}>Exits 2 when something is broken or coverage is under <code>--min</code>, so it can gate a deploy.</p>
       </details>

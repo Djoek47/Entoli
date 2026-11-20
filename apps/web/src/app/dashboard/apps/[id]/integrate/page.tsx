@@ -12,7 +12,7 @@ export const maxDuration = 300;
 function Diff({ text }: { text: string }) {
   const lines = text.split('\n').slice(2); // drop the ===/--- header noise jsdiff adds first
   return (
-    <pre className="block" style={{ margin: 0, fontSize: 12, lineHeight: 1.45 }}>
+    <pre tabIndex={0} className="block" style={{ margin: 0, fontSize: 12, lineHeight: 1.45 }}>
       {lines.map((l, i) => (
         <div key={i} style={{ background: l.startsWith('+') && !l.startsWith('+++') ? 'color-mix(in srgb, var(--lime) 18%, transparent)' : l.startsWith('-') && !l.startsWith('---') ? 'color-mix(in srgb, var(--warn) 12%, transparent)' : undefined, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{l || ' '}</div>
       ))}
@@ -40,7 +40,7 @@ export default async function IntegratePage({ params, searchParams }: { params: 
 
       {events.length ? (
         <section className="card stack">
-          <h3 style={{ margin: 0 }}>Your coding agent</h3>
+          <h2 className="sub"  style={{ margin: 0 }}>Your coding agent</h2>
           <table><tbody>{events.map((e) => (
             <tr key={e.id}><td className="mono muted" style={{ whiteSpace: 'nowrap' }}>{e.createdAt.toISOString().slice(11, 16)}</td>
               <td><span className={`pill ${e.kind === 'refused' ? 'warn' : ''}`}>{e.kind === 'progress' ? e.status : e.kind === 'submit' ? e.status : 'refused'}</span></td>

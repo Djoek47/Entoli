@@ -38,7 +38,7 @@ export default async function AnalyzePage({ params, searchParams }: { params: Pr
             <span className="muted mono">{r.createdAt.toISOString().slice(0, 16).replace('T', ' ')} UTC</span>
             {r.status === 'done' ? <span className="muted mono">{r.filesScanned} files · {r.usedModel ? `model ${r.tokensIn.toLocaleString()} in / ${r.tokensOut.toLocaleString()} out · $${(r.costMicros / 1e6).toFixed(4)}` : 'static only'}</span> : null}
           </div>
-          <pre className="block" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.log.map((l) => `› ${l}`).join('\n') || '…'}</pre>
+          <pre tabIndex={0} className="block" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{r.log.map((l) => `› ${l}`).join('\n') || '…'}</pre>
           {r.status === 'done' ? <div><a className="btn" href={`/dashboard/apps/${app.id}/map`}>Review the map</a> <a className="btn ghost" href={`/dashboard/apps/${app.id}/skill`}>Edit the skill</a></div> : null}
         </section>
       ))}

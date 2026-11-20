@@ -21,7 +21,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           {apps.map((a) => (
             <a key={a.id} className="card" href={`/dashboard/apps/${a.id}/map`}>
               <div className="kicker">{PLANS[a.plan].name}</div>
-              <h3 style={{ margin: '6px 0' }}>{a.name}</h3>
+              <h2 className="sub"  style={{ margin: '6px 0' }}>{a.name}</h2>
               <div className="muted mono">{a.repo ?? 'no repository yet'}</div>
               <div style={{ marginTop: 10 }}>
                 <span className={`pill ${a.skillStatus === 'published' ? 'ok' : ''}`}>skill: {a.skillStatus}</span>{' '}

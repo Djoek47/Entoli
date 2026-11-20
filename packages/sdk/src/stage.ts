@@ -119,7 +119,7 @@ export function renderStage(entoli: Entoli, el: HTMLElement, opts: StageOptions 
   injectOnce(doc, opts.fonts ?? true);
   const voice = entoli.mode === 'voice' && !!opts.speech?.supported;
 
-  const root = h(doc, 'div', { class: 'entoli', 'data-entoli': '' });
+  const root = h(doc, 'div', { class: 'entoli', 'data-entoli': '', role: 'region', 'aria-label': 'Ask this app' });
   const input = h(doc, 'input', { class: 'entoli-input', type: 'text', 'aria-label': 'Ask this app', placeholder: opts.placeholder ?? (voice ? 'Say or type what you want' : 'Type what you want'), autocomplete: 'off', enterkeyhint: 'go' });
   const mark = h(doc, 'span', { class: 'entoli-mark', 'aria-hidden': 'true' }, '>', h(doc, 'span', { class: 'entoli-wave' }, h(doc, 'i'), h(doc, 'i'), h(doc, 'i')));
   const mic = voice ? h(doc, 'button', { class: 'entoli-btn entoli-mic', type: 'button', 'aria-label': 'Speak' }) : null;

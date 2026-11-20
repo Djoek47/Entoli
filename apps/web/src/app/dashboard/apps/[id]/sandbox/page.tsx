@@ -40,7 +40,7 @@ export default async function SandboxPage({ params, searchParams }: { params: Pr
             <span className="muted mono">{sbx.provider} · {sbx.createdAt.toISOString().slice(11, 16)} UTC{sbx.expiresAt && ready ? ` · until ${sbx.expiresAt.toISOString().slice(11, 16)}` : ''}</span>
             {ready ? <a className="btn small" href={sbx.url!} target="_blank" rel="noreferrer">Open in a tab</a> : null}
           </div>
-          <pre className="block" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{sbx.log.map((l) => `› ${l}`).join('\n')}</pre>
+          <pre tabIndex={0} className="block" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{sbx.log.map((l) => `› ${l}`).join('\n')}</pre>
           {sbx.error ? <p className="notice err" style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{sbx.error}</p> : null}
           {sbx.applied?.length ? (
             <div>
@@ -72,7 +72,7 @@ export default async function SandboxPage({ params, searchParams }: { params: Pr
           {!checks.hasBar ? <p className="notice err">The app has no Entoli bar yet, so nothing could be tried. Wire it (your coding agent, or the integration) and restart the sandbox.</p> : (
             <p style={{ margin: 0 }}><strong>{checks.summary.percent}%</strong> of the acts did what they should ({checks.summary.good} of {checks.summary.checked}){checks.walk ? <> · map walk {checks.walk.coverage}% ({checks.walk.verified}/{checks.walk.checked})</> : null}</p>
           )}
-          <table><thead><tr><th /><th>Act</th><th>Said</th><th>Result</th></tr></thead>
+          <table><thead><tr><th><span className="sr-only">Actions</span></th><th>Act</th><th>Said</th><th>Result</th></tr></thead>
             <tbody>{checks.phrases.map((p) => (
               <tr key={p.act}><td>{ICON[p.status]}</td><td>{p.title}<div className="muted mono">{p.act}</div></td><td>“{p.phrase}”</td><td><span className={`pill ${p.status === 'ok' || p.status === 'ran' ? 'ok' : p.status === 'skipped' ? '' : 'warn'}`}>{WORDS[p.status]}</span>{p.reason ? <div className="muted">{p.reason}</div> : null}</td></tr>
             ))}</tbody></table>

@@ -102,7 +102,7 @@ nav.links a:hover { color: var(--ink); background: var(--bg-2); }
 .layer.l3 .n { -webkit-text-stroke-color: var(--dim); }
 .layer ul { margin: 0; padding-left: 18px; color: var(--dim); font-size: 15px; display: grid; gap: 4px; }
 .tag { justify-self: start; font: 500 11px var(--mono); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 6px; background: var(--bg-2); color: var(--dim); }
-.tag.live { background: color-mix(in srgb, var(--verd) 16%, transparent); color: var(--verd); }
+.tag.live { background: color-mix(in srgb, var(--verd) 16%, transparent); color: color-mix(in srgb, var(--verd) 60%, #000); }
 .modes { margin-top: 20px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .mode { border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: grid; gap: 6px; }
 .meter { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
@@ -129,7 +129,7 @@ nav.links a:hover { color: var(--ink); background: var(--bg-2); }
 .mapwrap { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; }
 .cols { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; }
 .col { min-width: 170px; display: grid; gap: 6px; align-content: start; }
-.col h4 { margin: 0 0 4px; font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
+.col h3 { margin: 0 0 4px; font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--dim); }
 .node { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 11px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
 .node[aria-pressed="true"] { border-color: var(--verd); background: color-mix(in srgb, var(--verd) 10%, var(--bg)); }
 .node.visited::after { content: "●"; color: var(--verd); font-size: 10px; align-self: center; }
@@ -140,7 +140,7 @@ nav.links a:hover { color: var(--ink); background: var(--bg-2); }
 
 .know { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .know .box { border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 8px; align-content: start; }
-.know h4 { margin: 0; font-size: 15px; }
+.know h3 { margin: 0; font-size: 15px; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; background: var(--bg); }
 .chip button { border: 0; background: none; cursor: pointer; color: var(--dim); padding: 0; }
@@ -341,23 +341,23 @@ footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--di
         <div class="panel" id="p-map" role="tabpanel" aria-labelledby="t-map" hidden>
           <div class="mapwrap">
             <div class="cols" id="cols"></div>
-            <aside class="side">
+            <div class="side" role="group" aria-label="Studio panel">
               <span class="eyebrow">Coverage</span>
               <div class="cov" id="cov">0%</div>
               <div class="meter"><i id="covbar" style="width:0%"></i></div>
               <p class="path" id="path">Home</p>
               <div class="row"><button class="btn small primary" id="walk" type="button">Walk every path</button><button class="btn small" id="resetmap" type="button">Reset</button></div>
               <p style="color:var(--dim);font-size:13px">Entoli walks the tree the way a user would and marks each node it can reach.</p>
-            </aside>
+            </div>
           </div>
         </div>
 
         <div class="panel" id="p-know" role="tabpanel" aria-labelledby="t-know" hidden>
           <p class="lede" style="font-size:16px">Tell it what your app can and can't do. It answers from this list and never invents a feature.</p>
           <div class="know">
-            <div class="box"><h4>It can</h4><div class="chips" id="can"></div>
+            <div class="box"><h3>It can</h3><div class="chips" id="can"></div>
               <form class="addrow" data-list="can"><input id="add-can" placeholder="Add something it can do" aria-label="Add something it can do"><button class="btn small" type="submit">Add</button></form></div>
-            <div class="box"><h4>It can't</h4><div class="chips" id="cannot"></div>
+            <div class="box"><h3>It can't</h3><div class="chips" id="cannot"></div>
               <form class="addrow" data-list="cannot"><input id="add-cannot" placeholder="Add something it can't do" aria-label="Add something it can't do"><button class="btn small" type="submit">Add</button></form></div>
           </div>
           <p style="color:var(--dim);font-size:14px">Try asking the bar below: “can it share notes?” or “can it export to PDF?”</p>
@@ -371,7 +371,7 @@ footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--di
               <select id="mode-pick" class="btn small"><option value="text">Text</option><option value="voice">Voice</option></select></div>
             <button class="btn small" id="copy" type="button">Copy skill</button>
           </div>
-          <pre class="code" id="skill"></pre>
+          <pre tabindex="0" class="code" id="skill"></pre>
         </div>
         <div class="panel" id="p-guide" role="tabpanel" aria-labelledby="t-guide" hidden>
           <p class="lede" style="font-size:16px">After payment, Entoli interviews you about your app, one question at a time, by voice or by tap. Each answer turns into real changes, feature by feature, that you approve before anything is written.</p>
@@ -389,7 +389,7 @@ footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--di
       <div class="two">
         <div class="card"><span class="tag">Self-serve</span><h3>Your team integrates</h3>
           <ul><li>API keys and the Entoli SDK</li><li>Full documentation and the skill format</li><li>The Studio to map, teach and test</li></ul>
-          <pre class="code">npm install @entoli/sdk
+          <pre tabindex="0" class="code">npm install @entoli/sdk
 
 import { mount } from '@entoli/sdk';
 import skill from './entoli.skill.json';
@@ -397,7 +397,7 @@ import skill from './entoli.skill.json';
 mount({ el: '#app', skill, key: process.env.ENTOLI_KEY });</pre></div>
         <div class="card"><span class="tag live">Managed</span><h3>We integrate over MCP</h3>
           <ul><li>Pay once, connect your repository</li><li>We scan the whole app and build the first skill</li><li>Your team extends it from there</li></ul>
-          <pre class="code">// your MCP config
+          <pre tabindex="0" class="code">// your MCP config
 {
   "entoli": {
     "url": "https://mcp.entoli.dev",
@@ -530,7 +530,7 @@ mount({ el: '#app', skill, key: process.env.ENTOLI_KEY });</pre></div>
     var cols = $('cols'); cols.replaceChildren();
     selected.forEach(function (n, depth) {
       if (!n.kids) return;
-      var c = el('div', 'col'); c.appendChild(el('h4', '', n.name));
+      var c = el('div', 'col'); c.appendChild(el('h3', '', n.name));
       n.kids.forEach(function (k) {
         var b = el('button', 'node' + (visited[k.path.join('/')] ? ' visited' : '')); b.type = 'button';
         b.setAttribute('aria-pressed', String(selected[depth + 1] === k));

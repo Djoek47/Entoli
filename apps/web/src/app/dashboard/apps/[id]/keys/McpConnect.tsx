@@ -10,7 +10,7 @@ export function McpConnect({ appId, allowed }: { appId: string; allowed: boolean
   const t = state.token ?? 'em_…your token…';
   return (
     <section className="card stack">
-      <h3 style={{ margin: 0 }}>Connect your coding agent</h3>
+      <h2 className="sub"  style={{ margin: 0 }}>Connect your coding agent</h2>
       <p className="muted" style={{ margin: 0 }}>Your own agent (Claude Code, Cursor, anything that speaks MCP) does the coding. Entoli tells it what to wire, keeps it inside the lines, and brings every change back here as a diff you approve. It cannot write to your repository.</p>
       {!allowed ? <p className="notice err">Part of the L2 plan. <a href={`/dashboard/apps/${appId}/billing`}>See plans</a></p> : (
         <>
@@ -23,9 +23,9 @@ export function McpConnect({ appId, allowed }: { appId: string; allowed: boolean
           <details>
             <summary style={{ cursor: 'pointer', fontWeight: 600 }}>How to add it</summary>
             <p className="muted">Claude Code:</p>
-            <pre className="block">{`claude mcp add --transport http entoli ${url} \\\n  --header "Authorization: Bearer ${t}"`}</pre>
+            <pre tabIndex={0} className="block">{`claude mcp add --transport http entoli ${url} \\\n  --header "Authorization: Bearer ${t}"`}</pre>
             <p className="muted">Cursor (<code>.cursor/mcp.json</code>):</p>
-            <pre className="block">{JSON.stringify({ mcpServers: { entoli: { url, headers: { Authorization: `Bearer ${t}` } } } }, null, 2)}</pre>
+            <pre tabIndex={0} className="block">{JSON.stringify({ mcpServers: { entoli: { url, headers: { Authorization: `Bearer ${t}` } } } }, null, 2)}</pre>
             <p className="muted">Then ask your agent: “Use the Entoli MCP server to integrate Entoli into this app.”</p>
           </details>
         </>

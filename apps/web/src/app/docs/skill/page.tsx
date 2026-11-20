@@ -9,7 +9,7 @@ export default function SkillFormat() {
       <h1>entoli.skill.json</h1>
       <DocsNav at="/docs/skill" />
       <p>The skill is the contract between your app and Entoli. The SDK validates it on <code>mount()</code> and refuses an invalid one; the dashboard only saves valid ones.</p>
-      <pre>{`{
+      <pre tabIndex={0}>{`{
   "entoli": "0.1",
   "app": { "name": "Fieldnotes" },
   "layer": "L1",                       // default for every act: L1 the device answers · L2 Entoli AI answers

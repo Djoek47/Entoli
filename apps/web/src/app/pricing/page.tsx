@@ -13,7 +13,7 @@ export default function Pricing() {
       <div className="grid">
         {Object.values(PLANS).map((p) => (
           <div key={p.id} className="card stack">
-            <h3 style={{ margin: 0 }}>{p.name}</h3>
+            <h2 className="sub"  style={{ margin: 0 }}>{p.name}</h2>
             <div className="mono">{p.priceUsd ? `$${p.priceUsd} / app / month` : '$0'}</div>
             <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}>
               {planFeatures(p).map((f) => <li key={f}>{f}</li>)}
@@ -21,7 +21,7 @@ export default function Pricing() {
           </div>
         ))}
         <div className="card stack">
-          <h3 style={{ margin: 0 }}>Managed</h3>
+          <h2 className="sub"  style={{ margin: 0 }}>Managed</h2>
           <div className="mono">From ${MANAGED_SETUP_FROM_USD.toLocaleString()}, once</div>
           <ul className="muted" style={{ margin: 0, paddingLeft: 18 }}><li>We scan and integrate (also over MCP)</li><li>First skill built and tested</li><li>Then any monthly plan</li></ul>
         </div>
