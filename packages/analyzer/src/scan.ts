@@ -361,7 +361,10 @@ function scanScript(file: string, text: string, kind = scriptKind(file), lineOff
           // A clickable container's nested text is its content, not its name.
           const text = ts.isJsxElement(n) ? (isButton ? jsxText(n) : directText(n)) : '';
           const label = attrString(a.get('aria-label')) || text || attrString(a.get('title')) || (handler ? humanize(handler) : '');
-          if (label || handler) found.controls.push({ ...base, kind: href ? 'link' : 'button', label: label || humanize(handler!), ...(handler ? { handler } : {}), ...(href ? { href } : {}) });
+          // A button with no name of its own whose handler is a prop callback (`onExample`) is wired by the parent
+          // (demo chips, list rows): it is not a feature of this component.
+          const namedByProp = !attrString(a.get('aria-label')) && !text && !attrString(a.get('title')) && !!handler && /^on[A-Z]/.test(handler);
+          if ((label || handler) && !namedByProp) found.controls.push({ ...base, kind: href ? 'link' : 'button', label: label || humanize(handler!), ...(handler ? { handler } : {}), ...(href ? { href } : {}) });
         }
       }
     }

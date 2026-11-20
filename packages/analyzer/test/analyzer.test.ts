@@ -228,3 +228,17 @@ describe('CLI', () => {
     e.mockRestore();
   });
 });
+
+describe('buttons wired by a parent are not features', () => {
+  it('skips a nameless button whose handler is a prop callback (onExample), keeps named ones', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'entoli-scan-'));
+    mkdirSync(join(dir, 'src'));
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'demo', dependencies: { react: '18' } }));
+    writeFileSync(join(dir, 'src', 'App.tsx'), `export function App({ onExample }: { onExample?: (t: string) => void }) {
+  return <div>{['a', 'b'].map((x) => <button key={x} onClick={() => onExample?.(x)}>{x}</button>)}<button onClick={() => save()}>Save</button></div>;
+}`);
+    const labels = scanRepo(dir).controls.map((c) => c.label);
+    expect(labels).toContain('Save');
+    expect(labels.some((l) => /example/i.test(l))).toBe(false);
+  });
+});
