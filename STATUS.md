@@ -266,5 +266,22 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 
 **Not verified (needs your keys/accounts)**: a real OpenAI Realtime conversation, Claude drafting the skill and the proposals' model-side parts, a real coding agent over MCP, the Vercel Sandbox provider, real Stripe, the GitHub App pull-request step, a hosted browser for the checks. The demo run uses fakes for exactly these; it proves the flow and the guardrails, not model quality or audio.
 
+## Hardening week — done
+
+**Real, tested**
+- **Gaps closed**: un-approving a change now restores the project file (or deletes one the change created); "start a new project" is a voice act (asks for a yes: it cannot be undone); drafting and copying are limited per day (2 / 3 on the free plan, 10 / 20 once you pay); `.ENV` is blocked as well as `.env`.
+- **Monorepos**: connect `owner/name#apps/web` (or a github `tree` URL). The sandbox, the original and the rebuild start in that folder (never outside the checkout). Run against this very repository: the folder is found; the sandbox now says plainly that an app with `workspace:*` dependencies cannot run alone, instead of failing inside `npm install`.
+- **Starter templates**: plain HTML, **Vite + React**, **Next.js** (all load the SDK bundle from `public/`, so no npm publish is needed). Both framework templates were run for real: npm install, dev server, 100% of the map reached, every phrase understood. No Expo template: the bundle is DOM-based.
+- **Evals** (`pnpm --filter @entoli/web eval`; the deterministic ones also run in `pnpm test`): device matcher (37 labelled phrases), analyzer (notes app), proposal (vs. a careful human), and a **live Claude resolver eval** (skipped without `ANTHROPIC_API_KEY`). **They found real bugs, now fixed**: "find meeting notes" and "show notes about travel" ran *Open* instead of *Search* (a slot value alone outranked a phrase the person said), "export my notes to pdf" ran *Open* instead of saying the app can't, and the analyzer invented an "Example" feature from demo chips. Matcher now: 28/29, **0 wrong acts**, 0 acts for non-requests. Floors are enforced.
+- **Accessibility and mobile**: axe-core (WCAG 2.1 A/AA + best practice) at 375 px and 1280 px over 21 pages: fixed heading order, colour contrast, keyboard access to code blocks, empty table headers, landmarks (the Stage is now a labelled region). `pnpm --filter @entoli/web a11y` repeats it (it caught one of my own regressions). No sideways scrolling at phone width.
+- **First run**: a "Getting started" checklist computed from what exists (7 steps, next one highlighted); sandbox and project failures explained in plain words with the fix, technical detail folded away.
+- **Smoke test** against your real accounts: `pnpm --filter @entoli/web smoke` (database + migrations, both GitHub credentials, Claude, Stripe prices/meters/webhook, OpenAI key mint, Vercel Sandbox boot, hosted browser, cron route). `/api/health` added.
+- **Landing**: a "Say the app into existence" section with the recorded run.
+
+**Not done, and why**
+- **ElevenLabs provider**: not built. It needs their realtime speech-to-text and streaming text-to-speech protocols; I cannot reach their docs from here and will not write a provider from memory. The `LiveProvider` interface is ready.
+- **Contract replays for OpenAI, GitHub, Vercel Sandbox**: not possible without reaching their APIs; the smoke test is the replacement (it checks the real shapes on day one). Stripe webhooks were already tested with the real library's signing.
+- The device matcher still misses vague paraphrases without a number ("make the text bigger"): Layer 2 handles those; the live resolver eval measures it once you have a key.
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

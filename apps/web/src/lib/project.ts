@@ -31,7 +31,7 @@ export const isProject = (app: Pick<AppRow, 'origin'>) => app.origin?.kind === '
 
 export const MAX_PROJECT_FILES = 300;
 export const MAX_PROJECT_BYTES = 8 * 1024 * 1024;
-const BLOCKED = /(^|\/)(node_modules|\.git|\.next|dist|build|coverage|\.env[^/]*|\.vercel|\.turbo)(\/|$)/;
+const BLOCKED = /(^|\/)(node_modules|\.git|\.next|dist|build|coverage|\.env[^/]*|\.vercel|\.turbo)(\/|$)/i;
 const TEXT = /\.(tsx?|jsx?|mjs|cjs|json|css|scss|html?|md|svg|txt|vue|svelte|yml|yaml)$|(^|\/)(\.gitignore|\.npmrc)$/;
 
 // ---- the starter shell ----------------------------------------------------------------------------------------------
@@ -98,8 +98,62 @@ for (const act of skill.acts) {
 }
 `;
 
-export function scaffold(name: string, skill: Skill, sdkBundle: string): { path: string; content: string }[] {
+export type Template = 'static' | 'vite' | 'next';
+export const TEMPLATES: { id: Template; label: string; note: string }[] = [
+  { id: 'static', label: 'Plain HTML and JavaScript', note: 'No install step: starts at once.' },
+  { id: 'vite', label: 'Vite + React', note: 'npm install, then a dev server.' },
+  { id: 'next', label: 'Next.js', note: 'npm install, then a dev server (slower first start).' },
+];
+
+// The same behaviour in each framework: one section per screen, every act a placeholder until the agent builds it.
+const REACT_BODY = (skillUrl: string) => `  const [skill, setSkill] = useState(null);
+  useEffect(() => { fetch('${skillUrl}').then((r) => r.json()).then(setSkill); }, []);
+  useEffect(() => {
+    if (!skill || !window.Entoli) return;
+    const bar = window.Entoli.mount({ el: '#entoli', skill, fonts: false });
+    for (const act of skill.acts) bar.register(act.name, {}, async () => ({ built: false }), { say: () => act.title + ' is not built yet.', describe: () => act.title });
+    return () => { document.getElementById('entoli').replaceChildren(); };
+  }, [skill]);
+  return (
+    <main>
+      {(skill?.map ?? []).map((n) => (
+        <section key={n.id} data-screen={n.id}>
+          <h2>{n.title}</h2>
+          <p className="todo">Not built yet.</p>
+        </section>
+      ))}
+      <div id="entoli" />
+    </main>
+  );`;
+
+export function scaffold(name: string, skill: Skill, sdkBundle: string, template: Template = 'static'): { path: string; content: string }[] {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'app';
+  const skillJson = JSON.stringify(skill, null, 2) + '\n';
+  if (template === 'vite') {
+    return [
+      { path: 'package.json', content: JSON.stringify({ name: slug, private: true, type: 'module', scripts: { dev: 'vite', build: 'vite build' }, dependencies: { react: '^18.3.1', 'react-dom': '^18.3.1' }, devDependencies: { '@vitejs/plugin-react': '^4.3.4', vite: '^5.4.11' } }, null, 2) + '\n' },
+      { path: 'vite.config.js', content: "import { defineConfig } from 'vite';\nimport react from '@vitejs/plugin-react';\nexport default defineConfig({ plugins: [react()] });\n" },
+      { path: 'index.html', content: `<!doctype html>\n<html lang="en">\n  <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>${name.replace(/[<>&"]/g, '')}</title></head>\n  <body>\n    <div id="root"></div>\n    <script src="/entoli.min.js"></script>\n    <script type="module" src="/src/main.jsx"></script>\n  </body>\n</html>\n` },
+      { path: 'src/main.jsx', content: "import React from 'react';\nimport { createRoot } from 'react-dom/client';\nimport App from './App.jsx';\nimport './app.css';\ncreateRoot(document.getElementById('root')).render(<App />);\n" },
+      { path: 'src/App.jsx', content: `import { useEffect, useState } from 'react';\n\n// Starter. Your coding agent replaces the placeholders with the real features (get_instructions over MCP).\nexport default function App() {\n${REACT_BODY('/entoli.skill.json')}\n}\n` },
+      { path: 'src/app.css', content: CSS },
+      { path: 'public/entoli.min.js', content: sdkBundle },
+      { path: 'public/entoli.skill.json', content: skillJson },
+      { path: 'entoli.skill.json', content: skillJson },
+    ];
+  }
+  if (template === 'next') {
+    return [
+      { path: 'package.json', content: JSON.stringify({ name: slug, private: true, scripts: { dev: 'next dev', build: 'next build', start: 'next start' }, dependencies: { next: '^15.1.0', react: '^19.0.0', 'react-dom': '^19.0.0' } }, null, 2) + '\n' },
+      { path: 'next.config.js', content: "// The sandbox opens the dev server on its own host names.\nmodule.exports = { allowedDevOrigins: ['127.0.0.1', 'localhost', '*.vercel.run', '*.vercel.app'] };\n" },
+      { path: 'app/layout.js', content: `import Script from 'next/script';\nimport './globals.css';\n\nexport const metadata = { title: ${JSON.stringify(name)} };\n\nexport default function RootLayout({ children }) {\n  return (\n    <html lang="en">\n      <body>\n        {children}\n        <Script src="/entoli.min.js" strategy="beforeInteractive" />\n      </body>\n    </html>\n  );\n}\n` },
+      { path: 'app/page.js', content: `'use client';\nimport { useEffect, useState } from 'react';\n\n// Starter. Your coding agent replaces the placeholders with the real features (get_instructions over MCP).\nexport default function Page() {\n${REACT_BODY('/entoli.skill.json')}\n}\n` },
+      { path: 'app/globals.css', content: CSS },
+      { path: 'public/entoli.min.js', content: sdkBundle },
+      { path: 'public/entoli.skill.json', content: skillJson },
+      { path: 'entoli.skill.json', content: skillJson },
+    ];
+  }
   return [
     { path: 'package.json', content: JSON.stringify({ name: slug, private: true, type: 'module', scripts: { dev: 'node server.mjs', start: 'node server.mjs' } }, null, 2) + '\n' },
     { path: 'server.mjs', content: SERVER },
@@ -107,7 +161,7 @@ export function scaffold(name: string, skill: Skill, sdkBundle: string): { path:
     { path: 'app.css', content: CSS },
     { path: 'app.js', content: APP_JS },
     { path: 'entoli.min.js', content: sdkBundle },
-    { path: 'entoli.skill.json', content: JSON.stringify(skill, null, 2) + '\n' },
+    { path: 'entoli.skill.json', content: skillJson },
   ];
 }
 
@@ -187,7 +241,7 @@ export function nameFromDescription(description: string): string {
   return words.length ? words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'New app';
 }
 
-export async function startBlank(db: DB, ownerId: string, input: { name: string; description: string }, deps: { drafter?: SkillDrafter; bundle?: string } = {}) {
+export async function startBlank(db: DB, ownerId: string, input: { name: string; description: string; template?: Template }, deps: { drafter?: SkillDrafter; bundle?: string } = {}) {
   const description = input.description.trim().slice(0, 2000);
   if (!description) throw new Error('Describe the app you want to build, in a sentence or two.');
   // Drafting costs money: more for people who pay.
@@ -195,12 +249,12 @@ export async function startBlank(db: DB, ownerId: string, input: { name: string;
   const perDay = paid ? 10 : 2;
   if (!(await hit(db, `blank:${ownerId}`, perDay, 86_400_000)).ok) throw new Error(`${perDay} new projects a day at most${paid ? '' : ' on the free plan'}. Try again tomorrow.`);
   const { app } = await createApp(db, ownerId, { name: input.name });
-  await db.update(apps).set({ origin: { kind: 'blank', description } }).where(eq(apps.id, app.id));
+  await db.update(apps).set({ origin: { kind: 'blank', description, template: input.template ?? 'static' } }).where(eq(apps.id, app.id));
   const { skill, drafted, note } = await draftSkill(app.name, description, deps.drafter);
   const saved = await saveSkill(db, ownerId, app.id, skill, 'draft');
   if (!saved.ok) throw new Error(saved.errors.join(' '));
   const bundle = deps.bundle ?? (await sdkBundle());
-  for (const f of scaffold(app.name, skill, bundle)) await writeProjectFile(db, app.id, f.path, f.content);
+  for (const f of scaffold(app.name, skill, bundle, input.template ?? 'static')) await writeProjectFile(db, app.id, f.path, f.content);
   return { appId: app.id, drafted, ...(note ? { note } : {}), files: (await projectFilesOf(db, app.id)).length };
 }
 
@@ -237,6 +291,10 @@ async function readSource(f: Fetched): Promise<{ path: string; content: string }
 }
 
 export async function startRebuild(db: DB, ownerId: string, input: { name: string; repo: string; subdir?: string | null }, deps: { source?: (repo: string) => Promise<Fetched> } = {}) {
+  // Copying downloads a whole repository: limit it per person, more for people who pay.
+  const paid = (await listApps(db, ownerId)).some((a) => PLANS[a.plan].priceUsd > 0);
+  const perDay = paid ? 20 : 3;
+  if (!(await hit(db, `rebuild:${ownerId}`, perDay, 86_400_000)).ok) throw new Error(`${perDay} copies a day at most${paid ? '' : ' on the free plan'}. Try again tomorrow.`);
   const { app } = await createApp(db, ownerId, { name: input.name, repo: input.repo, subdir: input.subdir ?? null });
   if (!app.repo) throw new Error('Choose the original repository to rebuild.');
   await db.update(apps).set({ origin: { kind: 'rebuild' } }).where(eq(apps.id, app.id));

@@ -15,8 +15,8 @@ export default function IntegrateByVoice() {
       <h2>1. Start</h2>
       <ul>
         <li><strong>Connect a repository</strong> (read-only) and press Analyze, or</li>
-        <li><strong>Start from empty</strong>: describe the app. Entoli writes the skill first (screens, features, honest “no” answers) and a small starter that already runs. Or</li>
-        <li><strong>Copy an existing app and rebuild it</strong>: the original stays untouched and keeps running beside the new one, judged by the same map and phrases.</li>
+        <li><strong>Start from empty</strong>: describe the app and pick plain HTML, Vite + React or Next.js. Entoli writes the skill first (screens, features, honest “no” answers) and a small starter that already runs. Say “start a new project” to do it by voice. Or</li>
+        <li><strong>Copy an existing app and rebuild it</strong>: the original stays untouched and keeps running beside the new one, judged by the same map and phrases. For an app inside a monorepo, give <code>owner/name#apps/web</code>. (Apps that depend on packages elsewhere in their monorepo cannot run in a sandbox.)</li>
       </ul>
 
       <h2>2. Talk it through</h2>

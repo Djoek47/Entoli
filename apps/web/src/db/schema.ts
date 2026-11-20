@@ -34,7 +34,7 @@ export const apps = pgTable('apps', {
   skillStatus: text('skill_status').$type<'none' | 'draft' | 'published'>().notNull().default('none'),
   previewUrl: text('preview_url'),
   /** Where this app came from: an existing repo (default), a blank start, or a rebuild of an existing app on Entoli (the original stays in `repo`). */
-  origin: jsonb('origin').$type<{ kind: 'existing' | 'blank' | 'rebuild'; description?: string }>(),
+  origin: jsonb('origin').$type<{ kind: 'existing' | 'blank' | 'rebuild'; description?: string; template?: 'static' | 'vite' | 'next' }>(),
   /** The latest "what should Entoli take over?" proposal, and what accepting it changed. */
   proposal: jsonb('proposal').$type<{ items: unknown[]; spoken: string; createdAt: string; applied?: Record<string, string | null> }>(),
   /** The app's design system: what was extracted from the code and from the running app, plus the tweaks applied on top. */

@@ -23,8 +23,8 @@ export default async function AppLayout({ children, params }: { children: React.
       <h1>{app.name}</h1>
       <div className="muted mono">{app.repo ?? 'no repository'} {app.installationId ? '· connected (read-only)' : ''}</div>
       {progress.next ? (
-        <details className="card" style={{ margin: '12px 0' }} open={progress.doneCount < 3}>
-          <summary><strong>Getting started</strong> <span className="muted">· {progress.doneCount} of {progress.steps.length} · next: <a href={progress.next.href}>{progress.next.title}</a></span></summary>
+        <section className="card" aria-label="Getting started" style={{ margin: '12px 0' }}>
+          <div><strong>Getting started</strong> <span className="muted">· {progress.doneCount} of {progress.steps.length} · next: <a href={progress.next.href}>{progress.next.title}</a></span></div>
           <ol style={{ margin: '10px 0 0', paddingLeft: 20 }}>
             {progress.steps.map((st) => (
               <li key={st.id} style={{ margin: '4px 0' }}>
@@ -34,7 +34,7 @@ export default async function AppLayout({ children, params }: { children: React.
               </li>
             ))}
           </ol>
-        </details>
+        </section>
       ) : null}
       <Tabs id={app.id} />
       {children}

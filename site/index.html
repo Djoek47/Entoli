@@ -88,6 +88,11 @@ nav.links a:hover { color: var(--ink); background: var(--bg-2); }
 @media (prefers-reduced-motion: reduce) { .ring .b { animation: none; } html { scroll-behavior: auto; } }
 
 /* Steps */
+.convo { display: grid; gap: 10px; max-width: 760px; }
+.turn { display: grid; gap: 4px; padding: 12px 16px; border-radius: 14px; border: 1px solid var(--line); background: color-mix(in srgb, var(--card) 85%, transparent); }
+.turn.you { justify-self: end; background: var(--bg-2); max-width: 85%; }
+.turn .who { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+.turn p { margin: 0; }
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; list-style: none; padding: 0; margin: 0; counter-reset: s; }
 .steps li { counter-increment: s; border: 1px solid var(--line); border-radius: 16px; padding: 20px; background: color-mix(in srgb, var(--card) 85%, transparent); display: grid; gap: 8px; align-content: start; }
 .steps li::before { content: counter(s, decimal-leading-zero); font: 500 13px var(--mono); color: var(--copper); }
@@ -277,6 +282,15 @@ footer { border-top: 1px solid var(--line); padding-block: 32px; color: var(--di
         <li><h3>Train and test</h3><p>Try it in the Studio, correct what it gets wrong, and watch coverage climb until every path is reachable.</p></li>
         <li><h3>Ship the skill</h3><p>One file, <code>entoli.skill.json</code>, plus the SDK. Your app is now operable by intent, with text or with voice.</p></li>
       </ol>
+    </div>
+  </section>
+
+  <section id="demo">
+    <div class="wrap">
+      <div class="head"><span class="eyebrow">Recorded run</span><h2>Say the app into existence</h2>
+        <p class="lede">A real run of the product against its own test suite: a database, a sandbox and a browser, with a scripted voice and a scripted coding agent. Entoli writes the skill, proposes what to hand to the AI, your own agent builds it inside the guardrails, you approve, and the sandbox checks every feature.</p></div>
+      <div class="convo" role="log" aria-label="A recorded conversation"><div class="turn you"><span class="who">You</span><p>Build me a todo app. I can add todos, and see the ones I have done.</p></div><div class="turn bot"><span class="who">Entoli</span><p>I wrote the skill first: 2 screens, 3 features, and a starter app that already runs (7 files).</p></div><div class="turn you"><span class="who">You</span><p>What should I expose?</p></div><div class="turn bot"><span class="who">Entoli</span><p>I found 3 features. I would hand Add a todo to the AI, because one sentence saves several clicks. I would keep Open done on the device: it is short and needs no AI. And I would leave Delete account manual, because it reaches outside the app or cannot be undone. That changes 2. Say accept to apply it, or ask why about any of them.</p></div><div class="turn you"><span class="who">You</span><p>Why is delete account manual?</p></div><div class="turn bot"><span class="who">Entoli</span><p>Delete account: I would put it on kept manual. It cannot be undone and it looks destructive, so I would keep it manual. Exposed later, it would always ask for a yes.</p></div><div class="turn you"><span class="who">You</span><p>Accept the proposal.</p></div><div class="turn bot"><span class="who">Entoli</span><p>This changes what the AI can reach. Say yes to go ahead, or no.</p></div><div class="turn you"><span class="who">You</span><p>Yes.</p></div><div class="turn bot"><span class="who">Entoli</span><p>Done. I changed 2 features. You can say undo, or move any of them yourself.</p></div><div class="turn bot"><span class="who">Entoli</span><p>The guardrails stopped your agent: .env: &quot;.env&quot; is not a file a project may hold (secrets, git data and installed packages are never part of it). Your agent submitted a change to app.js: Build the todo list and wire add and show. It is waiting for your approval. Your agent wired todo add.</p></div><div class="turn you"><span class="who">You</span><p>Approve all.</p></div><div class="turn bot"><span class="who">Entoli</span><p>Approved 1 change. It is written into your project.</p></div><div class="turn you"><span class="who">You</span><p>Run it in the sandbox and check it.</p></div><div class="turn bot"><span class="who">Entoli</span><p>It is running. I walked the map: 2 of 2 screens reached. I typed each feature&#x27;s phrase into the bar: 2 of 2 understood.</p></div><div class="turn you"><span class="who">You</span><p>Give me the project.</p></div><div class="turn bot"><span class="who">Entoli</span><p>Here is your project: 7 files, 24 kB zipped. Nothing was ever in a repository.</p></div></div>
+      <p class="meta" style="margin-top:14px">Every line above is produced by the code under test (<code>apps/web/test/demo.test.ts</code>). It shows the flow and the guardrails, not model quality.</p>
     </div>
   </section>
 

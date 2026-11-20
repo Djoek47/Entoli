@@ -36,7 +36,8 @@ export async function startProjectAction(form: FormData) {
       if (!spec) throw new Error('Choose the original repository (owner/name, or owner/name#folder for an app inside a monorepo).');
       id = (await startRebuild(db, user.id, { name, repo: spec.repo, subdir: spec.subdir })).appId;
     } else {
-      id = (await startBlank(db, user.id, { name, description: String(form.get('description') ?? '') })).appId;
+      const t = String(form.get('template') ?? 'static');
+      id = (await startBlank(db, user.id, { name, description: String(form.get('description') ?? ''), template: t === 'vite' || t === 'next' ? t : 'static' })).appId;
     }
   } catch (e) {
     redirect(`/dashboard?error=${q((e as Error).message)}`);

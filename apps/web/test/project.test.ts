@@ -297,3 +297,42 @@ describe('monorepos: an app inside a folder', () => {
     expect(row!.error).toMatch(/inside its own monorepo \(@entoli\/sdk\)/);
   }, 600_000);
 });
+
+describe('starter templates run for real', () => {
+  for (const template of ['vite', 'next'] as const) {
+    it(`${template}: npm install, dev server, the whole map reached, every phrase understood`, async () => {
+      const u = await user();
+      const r = await startBlank(db, u.id, { name: `T ${template}`, description: 'a todo list', template }, { drafter: async () => drafted });
+      await l2(r.appId);
+      const app = (await getApp(db, u.id, r.appId))!;
+      expect(app.origin).toMatchObject({ kind: 'blank', template });
+      const q = await queueSandbox(db, app);
+      if ('error' in q) throw new Error(q.error);
+      await bootSandbox(db, app, q.id, { provider });
+      try {
+        const { sandboxes } = await import('@/db/schema');
+        const [row] = await db.select().from(sandboxes).where(eq(sandboxes.id, q.id));
+        if (row!.status !== 'ready') throw new Error(`${row!.status}: ${row!.error}`);
+        const checks = await runChecks(db, app, q.id);
+        expect(checks.walk).toMatchObject({ coverage: 100, broken: [] });
+        expect(checks.summary.percent).toBe(100);
+      } finally { await stopSandbox(db, app, q.id, provider); }
+    }, 600_000);
+  }
+});
+
+describe('abuse limits on copying', () => {
+  it('allows 3 copies a day on the free plan, and treats .ENV like .env', async () => {
+    const u = await user();
+    const dir = await mkdtemp(join(tmpdir(), 'entoli-lim-'));
+    cleanups.push(dir);
+    await writeFile(join(dir, 'package.json'), '{"name":"x"}');
+    const source = async () => ({ dir, bytes: 1, cleanup: async () => {} });
+    for (let i = 0; i < 3; i++) await startRebuild(db, u.id, { name: `C${i}`, repo: 'acme/x' }, { source });
+    await expect(startRebuild(db, u.id, { name: 'C4', repo: 'acme/x' }, { source })).rejects.toThrow(/3 copies a day at most on the free plan/);
+    const { checkProjectFile } = await import('@/lib/guardrails');
+    expect(checkProjectFile('.ENV').ok).toBe(false);
+    expect(checkProjectFile('src/.Env.local').ok).toBe(false);
+    expect(checkProjectFile('src/app.js').ok).toBe(true);
+  });
+});

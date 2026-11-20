@@ -71,7 +71,7 @@ export function checkFile(raw: string, allowed: string[]): Verdict & { path?: st
   return { ...ok(), path };
 }
 
-const PROJECT_BLOCKED = /(^|\/)(node_modules|\.git|\.next|\.vercel|\.env[^/]*)(\/|$)/;
+const PROJECT_BLOCKED = /(^|\/)(node_modules|\.git|\.next|\.vercel|\.env[^/]*)(\/|$)/i;
 
 /** In a project built on Entoli the agent writes the app itself, so any normal source path is allowed (never secrets, git or installed packages). */
 export function checkProjectFile(raw: string): Verdict & { path?: string } {

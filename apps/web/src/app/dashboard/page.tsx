@@ -47,6 +47,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <label>Name<input name="name" required maxLength={80} placeholder="Todos" /></label>
           <label>Start<select name="how" defaultValue="blank"><option value="blank">From empty: I will describe it</option><option value="rebuild">Copy an existing app and rebuild it</option></select></label>
         </div>
+        <label>Built with <span className="muted">(from empty)</span><select name="template" defaultValue="static"><option value="static">Plain HTML and JavaScript: starts at once</option><option value="vite">Vite + React</option><option value="next">Next.js</option></select></label>
         <label>Describe the app <span className="muted">(from empty)</span><textarea name="description" rows={3} maxLength={2000} placeholder="A todo list with a done screen. I can add, complete and clear todos." /></label>
         <label>Original repository <span className="muted">(rebuild: the original is kept and runs beside the new one)</span><input name="repo" placeholder="owner/name" /></label>
         <div><button className="btn primary">Start the project</button></div>
