@@ -21,6 +21,8 @@ export type Control = {
   kind: ControlKind;
   label: string;
   handler?: string;
+  /** Found in plain markup (HTML, Svelte): the handler may be attached elsewhere (jQuery, Backbone), so a nameless handler is normal. */
+  markup?: boolean;
   /** For links and navigate('/x') calls. */
   href?: string;
   file: string;
@@ -52,8 +54,8 @@ export type ScanResult = {
 
 export type ScanOptions = { maxFiles?: number; maxFileBytes?: number };
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', 'out', '.next', '.nuxt', '.output', 'coverage', '.turbo', '.vercel', 'vendor', '__tests__', '__mocks__', 'test', 'tests', 'e2e', 'cypress', '.storybook', 'storybook-static', 'public', 'static', '.cache', 'tmp']);
-const CODE_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.vue']);
+const SKIP_DIRS = new Set(['node_modules', 'bower_components', 'node_modules.bak', '.git', 'dist', 'build', 'out', '.next', '.nuxt', '.output', 'coverage', '.turbo', '.vercel', 'vendor', '__tests__', '__mocks__', 'test', 'tests', 'e2e', 'cypress', '.storybook', 'storybook-static', 'public', 'static', '.cache', 'tmp']);
+const CODE_EXT = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.vue', '.svelte', '.html', '.htm']);
 const SKIP_FILE = /\.(test|spec|stories|story|d)\.[jt]sx?$|\.config\.[cm]?[jt]s$/;
 
 const SETTINGS_PLACE = /setting|preference|config|account|profile|appearance|options/i;
@@ -131,7 +133,7 @@ function scriptKind(file: string): ts.ScriptKind {
 
 function attrMap(el: ts.JsxOpeningLikeElement): Map<string, ts.JsxAttribute> {
   const m = new Map<string, ts.JsxAttribute>();
-  for (const p of el.attributes.properties) if (ts.isJsxAttribute(p)) m.set(p.name.getText(), p);
+  for (const p of el.attributes.properties) if (ts.isJsxAttribute(p)) m.set(p.name.getText().replace(/\$$/, ''), p);
   return m;
 }
 
@@ -524,7 +526,119 @@ function detectFrameworks(root: string, files: string[], packages: string[]): { 
   return { all: [...all], forFile };
 }
 
+
+// ---- plain HTML and Svelte markup -----------------------------------------------------------------
+// jQuery, Backbone, Vue 2 in a page, Alpine, htmx, hand-written pages, Svelte components: the controls are in the
+// markup, with a click handler named by whichever attribute the library uses. Anything without a name of its own
+// (an icon button) is named from its id or class. Nothing here runs code.
+
+const CLICK = /(?:^|\s)(?:onclick|on:click|@click(?:\.\w+)*|v-on:click(?:\.\w+)*|ng-click|\(click\)|hx-(?:get|post|put|delete)|x-on:click|data-action|data-click)\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/;
+const SUBMIT = /(?:^|\s)(?:onsubmit|on:submit(?:\|\w+)*|@submit(?:\.\w+)*|v-on:submit(?:\.\w+)*|ng-submit|\(ngSubmit\))\s*=\s*(?:"([^"]*)"|'([^']*)'|\{([^}]*)\})/;
+const attrOf = (attrs: string, name: string) => new RegExp(`(?:^|\\s)(?:${name})\\s*=\\s*(?:"([^"]*)"|'([^']*)')`).exec(attrs)?.slice(1).find((x) => x !== undefined);
+const handlerName = (expr: string | undefined) => {
+  if (!expr) return undefined;
+  // `() => increment()` → increment; `count++` and `x = 1` are not handlers (they change state inline).
+  const e = expr.trim().replace(/^\{|\}$/g, '').trim().replace(/^(?:async\s*)?(?:\([\w\s,$]*\)|[\w$]+)\s*=>\s*/, '').replace(/^\{|\}$/g, '').trim();
+  const call = /^(?:this\.|\$ctrl\.|\$scope\.|\$root\.)?([A-Za-z_$][\w$]*)\s*\(/.exec(e);
+  if (call) return call[1];
+  return /^(?:this\.|\$ctrl\.|\$scope\.)?([A-Za-z_$][\w$]*)\s*;?$/.exec(e)?.[1];
+};
+const firstOf = (m: RegExpExecArray | null) => (m ? m[1] ?? m[2] ?? m[3] : undefined);
+/** Attributes of a tag, with quoted values (which may contain > and {}) kept whole. */
+const ATTRS = '((?:"[^"]*"|\'[^\']*\'|\\{[^{}]*\\}|[^>"\'{])*)';
+const NOT_HANDLER = /^(true|false|null|undefined|function|return|if|var|let|const|event|e|\$event|this)$/;
+
+function scanMarkup(file: string, text: string, kind: 'html' | 'svelte'): Found {
+  const found: Found = { controls: [], routes: [], imports: [], components: [] };
+  // Script blocks are code (scanned as such for svelte); the markup is everything else.
+  let markup = text.replace(/<style\b[\s\S]*?<\/style>/gi, (m) => m.replace(/[^\n]/g, ' '));
+  if (kind === 'svelte') {
+    const script = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(text);
+    if (script) {
+      try { const f = scanScript(file, script[1]!, /lang=["']ts["']/.test(script[0]) ? ts.ScriptKind.TS : ts.ScriptKind.JS, text.slice(0, script.index).split('\n').length - 1); found.controls.push(...f.controls); found.imports.push(...f.imports); } catch { /* unparsable script */ }
+    }
+  }
+  markup = markup.replace(/<script\b(?![^>]*type=["']text\/(?:template|x-handlebars|x-template|ng-template|html)[^"']*["'])[\s\S]*?<\/script>/gi, (m) => m.replace(/[^\n]/g, ' '));
+  // Handlebars/mustache tags sit inside attributes and tags; they are not markup.
+  if (kind === 'html') markup = markup.replace(/\{\{[^}]*\}\}/g, (m) => m.replace(/[^\n]/g, ' '));
+  const lineAt = (i: number) => text.slice(0, i).split('\n').length;
+  const component = basename(file).replace(/\.[^.]+$/, '');
+  const clean = (s: string) => clip(squash(s.replace(/<[^>]+>/g, ' ').replace(/\{\{[^}]*\}\}|\{[^}]*\}|<%[^%]*%>/g, ' ')));
+  const named = (attrs: string) => {
+    const id = attrOf(attrs, 'id');
+    const cls = attrOf(attrs, 'class')?.split(/\s+/).find((c) => /^[a-z][a-z0-9-]{2,}$/i.test(c) && !/^(btn|button|link|active|selected|hidden|disabled|primary|secondary|small|large)$/i.test(c));
+    return id ?? cls ?? '';
+  };
+  const inForm: [number, number][] = [];
+
+  for (const m of markup.matchAll(new RegExp(`<form\\b${ATTRS}>([\\s\\S]*?)<\\/form>`, 'gi'))) {
+    inForm.push([m.index ?? 0, (m.index ?? 0) + m[0].length]);
+    const attrs = m[1] ?? '';
+    const handler = handlerName(firstOf(SUBMIT.exec(attrs)));
+    const fields: Field[] = [];
+    for (const f of (m[2] ?? '').matchAll(/<(input|textarea|select)\b([^>]*)>/gi)) {
+      const fa = f[2] ?? '';
+      const type = f[1]!.toLowerCase() === 'input' ? attrOf(fa, 'type') ?? 'text' : f[1]!.toLowerCase();
+      if (['submit', 'button', 'hidden', 'checkbox'].includes(type) && type !== 'checkbox') continue;
+      const name = safeName(attrOf(fa, 'name|v-model|ng-model|id|placeholder|aria-label') ?? type);
+      if (name && !fields.some((x) => x.name === name)) fields.push({ name, label: humanize(name), type: slotTypeFor(type, name, false), inputType: type });
+    }
+    const label = clean((m[2] ?? '').match(/<button\b[^>]*>([\s\S]*?)<\/button>/i)?.[1] ?? '') || attrOf(attrs, 'aria-label|title') || (handler && !NOT_HANDLER.test(handler) ? humanize(handler) : named(attrs) ? humanize(named(attrs)) : 'Form');
+    found.controls.push({ file, line: lineAt(m.index ?? 0), component, markup: true, kind: 'form', label, ...(handler && !NOT_HANDLER.test(handler) ? { handler } : {}), fields });
+  }
+  const insideForm = (i: number) => inForm.some(([a, b]) => i > a && i < b);
+
+  for (const m of markup.matchAll(new RegExp(`<(button|a|input|li|span|div|label)\\b${ATTRS}(?:\\/>|>([\\s\\S]*?)<\\/\\1>|>)`, 'gi'))) {
+    const [, tagRaw, attrs = '', inner = ''] = m;
+    const tag = tagRaw!.toLowerCase();
+    if (insideForm(m.index ?? 0)) continue;
+    const click = firstOf(CLICK.exec(attrs)) ?? /data-bind\s*=\s*["'][^"']*\bclick:\s*([\w$.]+)/.exec(attrs)?.[1];
+    const isInput = tag === 'input';
+    const type = isInput ? attrOf(attrs, 'type') ?? 'text' : '';
+    const isButtonLike = tag === 'button' || (isInput && (type === 'button' || type === 'submit'));
+    if (!isButtonLike && !click && !(tag === 'a' && /^\/[^/]/.test(attrOf(attrs, 'href') ?? ''))) {
+      // A bare field outside a form: a search box, a toggle, a setting.
+      if (isInput && !['hidden', 'submit', 'button'].includes(type)) {
+        const name = safeName(attrOf(attrs, 'name|v-model|ng-model|bind:value|id|placeholder|aria-label') ?? type);
+        const label = attrOf(attrs, 'aria-label|placeholder|title') ?? humanize(name);
+        const field: Field = { name, label: humanize(name), type: slotTypeFor(type, name, false), inputType: type };
+        found.controls.push({ file, line: lineAt(m.index ?? 0), component, markup: true, kind: type === 'checkbox' ? 'toggle' : 'input', label: clip(label, 40), name, handler: `set${name.charAt(0).toUpperCase()}${name.slice(1)}`, inputType: type, fields: [field] });
+      }
+      continue;
+    }
+    let handler = handlerName(click);
+    if (handler && NOT_HANDLER.test(handler)) handler = undefined;
+    const label = (isInput ? attrOf(attrs, 'value') : clean(inner)) || attrOf(attrs, 'aria-label|title') || (named(attrs) ? humanize(named(attrs)) : '') || (handler ? humanize(handler) : '');
+    const href = tag === 'a' ? attrOf(attrs, 'href') : undefined;
+    if (!label) continue;
+    // Row and container clicks (li/span/div) are only controls when they name a handler.
+    if (!isButtonLike && tag !== 'a' && !handler) continue;
+    found.controls.push({ file, line: lineAt(m.index ?? 0), component, markup: true, kind: href && href.startsWith('/') ? 'link' : 'button', label: clip(label, 40), ...(handler ? { handler } : {}), ...(href && href.startsWith('/') ? { href } : {}) });
+  }
+  return found;
+}
+
+/** HTML written inside JavaScript: `<button id="counter">` in a template literal (vanilla, Lit, Alpine-style apps). */
+function scanTemplates(file: string, text: string): Found {
+  const found: Found = { controls: [], routes: [], imports: [], components: [] };
+  for (const m of text.matchAll(/`([^`]*<(?:button|form|input|a)\b[^`]*)`/g)) {
+    const before = text.slice(0, m.index ?? 0).split('\n').length - 1;
+    const f = scanMarkup(file, '\n'.repeat(before) + (m[1] ?? ''), 'html');
+    found.controls.push(...f.controls);
+  }
+  return found;
+}
+
 // ---- main -------------------------------------------------------------------------
+
+function scanScriptAndTemplates(file: string, text: string): Found {
+  const code = scanScript(file, text);
+  if (/\.(tsx|jsx)$/.test(file) || !text.includes('<')) return code;
+  const t = scanTemplates(file, text);
+  // JSX already found its controls; template strings add the ones written as HTML.
+  code.controls.push(...t.controls.filter((c) => !code.controls.some((x) => x.line === c.line && x.label === c.label)));
+  return code;
+}
 
 export function scanRepo(rootIn: string, options: ScanOptions = {}): ScanResult {
   const root = resolve(rootIn);
@@ -539,7 +653,7 @@ export function scanRepo(rootIn: string, options: ScanOptions = {}): ScanResult 
   for (const f of files) {
     let text: string;
     try { text = readFileSync(f, 'utf8'); } catch { parseSkipped++; continue; }
-    try { perFile.set(f, f.endsWith('.vue') ? scanVue(f, text) : scanScript(f, text)); } catch { parseSkipped++; }
+    try { perFile.set(f, f.endsWith('.vue') ? scanVue(f, text) : f.endsWith('.svelte') ? scanMarkup(f, text, 'svelte') : /\.html?$/.test(f) ? scanMarkup(f, text, 'html') : scanScriptAndTemplates(f, text)); } catch { parseSkipped++; }
   }
 
   // Which file declares which component, for route elements.

@@ -3,7 +3,8 @@
  * save the result as a DRAFT skill for the developer to edit, and log what
  * the model pass cost.
  */
-import { analyze, hasAnthropicKey } from '@entoli/analyzer';
+import { analyze, hasAnthropicKey, planFor } from '@entoli/analyzer';
+import { appRoot } from './project';
 import { and, desc, eq, gt, inArray } from 'drizzle-orm';
 import type { DB } from '@/db';
 import { analyses, apps } from '@/db/schema';
@@ -45,7 +46,8 @@ export async function runAnalysis(db: DB, app: AppRow, analysisId: string, sourc
     await flush();
     fetched = await source(app);
     log.push(`Downloaded ${(fetched.bytes / 1e6).toFixed(1)} MB.`);
-    const r = await analyze(fetched.dir, {
+    const root = await appRoot(fetched.dir, app.subdir);
+    const r = await analyze(root, {
       maxFiles: ANALYSIS_LIMITS.maxFiles,
       maxInputTokens: ANALYSIS_LIMITS.maxInputTokens,
       maxOutputTokens: ANALYSIS_LIMITS.maxOutputTokens,
@@ -58,8 +60,10 @@ export async function runAnalysis(db: DB, app: AppRow, analysisId: string, sourc
     if (!saved.ok) throw new Error(`Draft did not validate: ${saved.errors.slice(0, 3).join('; ')}`);
     log.push('Saved as a draft. Review the map, the acts and their contract, then publish.');
     console.info(`[analysis] app=${app.id} files=${r.scan.files} model=${r.usedModel ? r.model : 'none'} in=${r.usage.tokensIn} out=${r.usage.tokensOut} cost_usd=${(r.costMicros / 1e6).toFixed(4)}`);
+    const plan = await planFor(root, {}, r);
+    log.push(`Recognised: ${plan.profile.label} (${plan.profile.support} support).`);
     await flush({
-      status: 'done', filesScanned: r.scan.files, usedModel: r.usedModel, sources: r.sources,
+      status: 'done', plan: plan as unknown as Record<string, unknown>, filesScanned: r.scan.files, usedModel: r.usedModel, sources: r.sources,
       tokensIn: r.usage.tokensIn, tokensOut: r.usage.tokensOut, costMicros: r.costMicros, finishedAt: new Date(),
     });
   } catch (e) {

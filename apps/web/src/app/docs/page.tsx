@@ -12,7 +12,8 @@ export default function Quickstart() {
         <li>
           <h2 className="sub">Get a skill</h2>
           <p>Connect your repository in the <a href="/dashboard">dashboard</a> and press Analyze, or run the analyzer locally. You get <code>entoli.skill.json</code>: the map of your screens, the acts your app can do (each with its blast radius and whether it can be undone) and what it can and can't do. Review it; nothing is published until you say so.</p>
-          <pre tabIndex={0}>{`npx entoli analyze ./my-app          # static scan; with ANTHROPIC_API_KEY, Claude reviews the draft`}</pre>
+          <pre tabIndex={0}>{`npx entoli inspect ./my-app          # what kind of app is this, and how to integrate Entoli
+npx entoli analyze ./my-app          # static scan; with ANTHROPIC_API_KEY, Claude reviews the draft`}</pre>
         </li>
         <li>
           <h2 className="sub">Mount the bar</h2>

@@ -119,7 +119,10 @@ export function draftSkill(scan: ScanResult): Draft {
     const isLoose = c.kind === 'input' && (looseInputs.get(keyOf(c)) ?? []).includes(c);
     // A button that only switches screens is navigation (nav.open covers it).
     const isNavButton = c.kind === 'button' && !!c.handler && SETTER.test(c.handler) && (screenTitles.has(c.label.toLowerCase()) || /screen|tab|page|view|route/i.test(c.handler));
-    const actionable = c.kind !== 'link' && !!c.handler && !SKIP_HANDLERS.test(c.handler) && !isLoose && !isNavButton;
+    // Markup controls (HTML, Svelte) often have no handler to name: jQuery and Backbone attach theirs from a selector. Their label names the act.
+    const hasCreator = scan.controls.some((x) => x.kind === 'button' && keyOf(x) === keyOf(c) && CREATES.test(`${x.label} ${x.handler ?? ''}`));
+    const markupAct = !!c.markup && !isNavButton && (c.kind === 'button' || c.kind === 'toggle' || (c.kind === 'input' && (!isLoose || !hasCreator)));
+    const actionable = c.kind !== 'link' && !isNavButton && ((!!c.handler && !SKIP_HANDLERS.test(c.handler) && !isLoose) || markupAct);
     if (actionable) {
       const name = actName(c);
       if (name) {

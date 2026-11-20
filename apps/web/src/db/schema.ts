@@ -89,6 +89,8 @@ export const analyses = pgTable('analyses', {
   log: jsonb('log').$type<string[]>().notNull().default([]),
   /** Where each act lives in the code: { actName: [{ file, line, component, handler }] }. */
   sources: jsonb('sources').$type<Record<string, { file: string; line: number; component?: string; handler?: string }[]>>(),
+  /** What kind of app this is and how to make it operable by intent (the analyzer's inspect plan). */
+  plan: jsonb('plan').$type<Record<string, unknown>>(),
   error: text('error'),
   createdAt: created(),
   finishedAt: timestamp('finished_at', { withTimezone: true }),

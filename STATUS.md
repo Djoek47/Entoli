@@ -283,5 +283,20 @@ Plan for the whole voice tool: `docs/VOICE_TOOL_PLAN.md` (7 steps, decisions rec
 - **Contract replays for OpenAI, GitHub, Vercel Sandbox**: not possible without reaching their APIs; the smoke test is the replacement (it checks the real shapes on day one). Stripe webhooks were already tested with the real library's signing.
 - The device matcher still misses vague paraphrases without a number ("make the text bigger"): Layer 2 handles those; the live resolver eval measures it once you have a key.
 
+## Recognising a real app — done (tested on 47 third-party apps)
+
+**The question**: point Entoli at an existing project: does it recognise what it is, and does it say how to implement Entoli in it?
+
+**Real, tested**
+- `entoli inspect <path>` (and, in the dashboard, the Analyze tab after a run): what kind of app it is **from evidence in its files** (never from its name), language, bundler, package manager, start command, where the bar mounts, how many features were found and where (`file:line`), concrete integration steps in that framework's idiom, and honest caveats. It also says how much Entoli can do for it: **full** (React, Next.js, Remix: read the code, wire with hooks), **partial** (Vue, Svelte, Nuxt, jQuery, Backbone, AngularJS, Knockout, plain HTML… read from markup, wire with `defineAct`), **host only** (Angular, Dojo, Ext JS… can host the bar, name features by hand), **none** (React Native/Expo, a server with no UI: said plainly).
+- The scanner now reads **HTML, Svelte markup, and HTML written inside JavaScript strings** (Lit, vanilla), with handlers from `onclick`, `@click`, `ng-click`, `data-bind="click:"`, `on:click`, names unlabelled icon buttons from their id/class, and ignores Handlebars tags and quoted `>`.
+- **Corpus test, third-party code from npm** (`create-vite`: 16 official templates; `todomvc`: ~60 independent implementations by their framework authors; folder name = ground truth): **46 of 47 recognised correctly** (the miss: Google Closure → "plain JS"), **39 of 47 get at least one feature found**. Reproduce: see `apps/web/evals/corpus.eval.test.ts`.
+- **Live, real GitHub**: through the real dashboard, `Djoek47/entoli#examples/notes-app` was downloaded from GitHub, recognised as **React (Vite), TypeScript, mount in src/main.tsx**, 7 features with exact `file:line`, and the caveat that it depends on monorepo-local packages so the sandbox cannot install it alone.
+- Dev fix found on the way: the local dev database lived inside the watched folder and made `next dev` reload forever; it now lives in `~/.entoli/dev`.
+
+**Not possible from here, said plainly**: this environment's network reaches only this repository on GitHub (other repos return 403), so "a random GitHub project" was tested with real third-party apps from npm and with this repo's own example, not with arbitrary GitHub repos. Run `entoli inspect` on any repo you clone to check it yourself.
+
+**Known limits**: Qwik-style inline handlers (`onClick$={() => count.value++}`) have no function name to find; compiled-from-another-language apps (GWT, Dart) are recognised but their UI is only found if it is in plain markup; unknown libraries are reported as "plain HTML and JavaScript (no framework Entoli knows)".
+
 ## Static site
 `site/` is the canonical marketing page (also deployable alone: Root Directory `site`, Framework Other).

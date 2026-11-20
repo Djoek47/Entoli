@@ -74,3 +74,5 @@ export { askJson, costMicros, hasAnthropicKey, AiError, DEFAULT_MODEL, type Usag
 export { mergeRefinement, summarize, REFINE_SCHEMA } from './refine.js';
 export type { ScanResult, Control, Screen, Field } from './scan.js';
 export type { Draft, Guess, ActSource } from './draft.js';
+
+export { inspectRepo, planFor, formatPlan, type Profile, type Plan, type AppKind, type Support } from './inspect.js';

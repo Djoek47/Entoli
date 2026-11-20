@@ -75,6 +75,11 @@ describe('analysis job', () => {
     expect(run).toMatchObject({ status: 'done', usedModel: false, costMicros: 0 });
     expect(run!.filesScanned).toBe(3);
     expect(run!.log.join('\n')).toMatch(/Saved as a draft/);
+    // It also says what kind of app this is, and how to make it operable by intent.
+    const plan = run!.plan as { profile: { kind: string; support: string; label: string }; steps: unknown[] };
+    expect(plan.profile).toMatchObject({ kind: 'react', support: 'full' });
+    expect(plan.steps.length).toBeGreaterThan(3);
+    expect(run!.log.join('\n')).toMatch(/Recognised: React/);
     const after = (await getApp(db, u.id, app.id))!;
     expect(after.skillStatus).toBe('draft');
     expect((after.skill as { app: { name: string; repo: string } }).app).toEqual({ name: 'Notes', repo: 'acme/notes' });

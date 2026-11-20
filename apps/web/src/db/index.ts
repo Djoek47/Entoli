@@ -3,6 +3,7 @@
  * Local dev and tests: PGlite, Postgres compiled to WASM, in-process, so the
  * dashboard runs with no account at all. Same schema, same migrations.
  */
+import os from 'node:os';
 import path from 'node:path';
 import type { PgliteDatabase } from 'drizzle-orm/pglite';
 import * as schema from './schema';
@@ -37,7 +38,7 @@ export function getDb(): Promise<DB> {
     if (url) dbPromise = neon(url);
     else if (process.env.NODE_ENV === 'production' && !process.env.ENTOLI_ALLOW_PGLITE) {
       throw new Error('DATABASE_URL is not set. Add a Postgres (Neon) connection string.');
-    } else dbPromise = pglite(process.env.PGLITE_DIR ?? path.join(process.cwd(), '.data', 'pglite'));
+    } else dbPromise = pglite(process.env.PGLITE_DIR ?? path.join(os.homedir(), '.entoli', 'dev', 'pglite'));
     g.__entoliDb = dbPromise;
   }
   return dbPromise;

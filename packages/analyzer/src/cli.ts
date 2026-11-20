@@ -3,11 +3,13 @@
  */
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { analyze } from './index.js';
+import { analyze, formatPlan, planFor } from './index.js';
 
 const HELP = `Usage: entoli analyze <path> [options]
+       entoli inspect <path> [--json]      what kind of app is this, and how to make it operable by intent
 
-Reads a React / Next.js / Vue repository and drafts entoli.skill.json.
+Reads a web app (React, Next.js, Vue, Svelte, Solid, plain HTML, jQuery, AngularJS, Backbone and more)
+and drafts entoli.skill.json. "inspect" says what kind of app it is and how to integrate Entoli.
 
 Options:
   --out <file>              where to write the skill (default: <path>/entoli.skill.json)
@@ -27,6 +29,14 @@ export async function main(argv: string[]): Promise<number> {
     return args.length === 0 ? 1 : 0;
   }
   const cmd = args.shift();
+  if (cmd === 'inspect') {
+    const json = args.includes('--json');
+    const p = args.find((a) => !a.startsWith('--'));
+    if (!p) { console.error('Missing <path>.'); return 1; }
+    const plan = await planFor(p, { ai: false });
+    console.log(json ? JSON.stringify(plan, null, 2) : formatPlan(plan));
+    return 0;
+  }
   if (cmd !== 'analyze') {
     console.error(`Unknown command "${cmd}".\n\n${HELP}`);
     return 1;
