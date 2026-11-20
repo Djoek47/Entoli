@@ -11,7 +11,8 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "eval": "vitest run --config vitest.eval.config.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.15",

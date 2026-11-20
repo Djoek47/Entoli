@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-20T13:19:01.406Z",
+  "summary": {
+    "phrases": 37,
+    "understood": "28/29",
+    "asked or unsure": 1,
+    "WRONG ACT": 0,
+    "ran something for a non-act": 0
+  },
+  "failures": [
+    {
+      "ok": "✗",
+      "phrase": "make the text bigger",
+      "expected": "settings.fontSize",
+      "got": "none",
+      "note": "paraphrase, no number"
+    }
+  ]
+}

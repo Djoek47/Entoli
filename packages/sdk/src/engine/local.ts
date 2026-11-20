@@ -98,9 +98,13 @@ export class LocalResolver implements Resolver {
 
     for (const act of acts) {
       let phraseMatch = 0;
+      let phraseTokens = 0;
       for (const p of act.phrases ?? []) {
         const m = matchPhrase(tokens, p);
-        if (m && m.score > phraseMatch) phraseMatch = m.score;
+        if (m && (m.score > phraseMatch || (m.score === phraseMatch && p.trim().split(/\s+/).length > phraseTokens))) {
+          phraseMatch = m.score;
+          phraseTokens = p.trim().split(/\s+/).length;
+        }
       }
 
       // Coverage counts only the required slots THIS tier can evaluate. A
@@ -145,7 +149,11 @@ export class LocalResolver implements Resolver {
         total += this.routing.phraseWeight * phraseMatch;
       }
       weight += this.routing.coverageWeight;
-      total += this.routing.coverageWeight * (evaluable.length > 0 ? requiredCoverage : this.routing.uncheckableCoverage);
+      // Nothing to check but the trigger phrase (e.g. an act whose only slot is free text): when the phrase
+      // itself matched, that IS the evidence. Counting the absent slots against it let an act that matched
+      // only a word in its options ("notes") outrank "find meeting notes" -> search.
+      const phraseBacked = evaluable.length === 0 && phraseMatch >= this.routing.phraseFloor;
+      total += this.routing.coverageWeight * (evaluable.length > 0 ? requiredCoverage : phraseBacked ? phraseMatch : this.routing.uncheckableCoverage);
 
       // Nothing named the act, and the sentence is not asking for anything:
       // a chore or a name mentioned in passing is not a request. Scaled so that
@@ -198,7 +206,10 @@ export class LocalResolver implements Resolver {
         act: act.name,
         phraseMatch,
         requiredCoverage,
-        score: asking && weight > 0 ? total / weight : 0,
+        phraseTokens,
+        // An act matched only by a slot value, with none of its own phrases, is weaker evidence than one the
+        // person named: "dark mode" still finds the theme, but "find meeting notes" belongs to search.
+        score: asking && weight > 0 ? (total / weight) * (phraseMatch >= this.routing.phraseFloor || !(act.phrases ?? []).length ? 1 : 0.8) : 0,
       });
     }
 

@@ -405,6 +405,21 @@ export class Entoli {
       if (named.length === 1) decision = { kind: 'start', act: named[0]!.act, scores };
     }
 
+    // An act chosen only by a word in its options (no phrase of its own), where the app says it cannot do what was
+    // asked ("export my notes to pdf"): say so instead of acting.
+    if (decision.kind === 'start') {
+      const top = scores.find((x) => x.act === decision.act);
+      if (top && top.phraseMatch < 0.9) {
+        const a = answerFrom(this.skill.knowledge, said);
+        // Only when the app says it CANNOT do this: running a different act would contradict its own answer.
+        if (a && a.entry.can === false) {
+          this.stats.knowledge++;
+          this.set({ phase: 'answer', said, channel, message: a.entry.answer, can: a.entry.can });
+          return this._state;
+        }
+      }
+    }
+
     // Layer 2: the AI answers every new request, then the change goes on the card.
     const deviceOnly = decision.kind === 'start' && this.acts.get(decision.act)?.layer === 'L1';
     const anyAi = [...this.acts.values()].some((r) => r.layer === 'L2' && r.declared);

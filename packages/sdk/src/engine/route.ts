@@ -17,6 +17,12 @@ export function pickAct(scores: ActScore[], routing: RoutingConfig = DEFAULT_ROU
     (s) => s.score >= routing.tauAct && top.score - s.score < routing.deltaAct,
   );
 
-  if (tied.length > 1) return { kind: 'narrow', acts: tied.map((s) => s.act), scores: ranked };
+  // Two acts matched fully: the one whose phrase says more wins ("show notes about" over "show").
+  if (tied.length > 1) {
+    const by = [...tied].sort((a, b) => (b.phraseTokens ?? 0) - (a.phraseTokens ?? 0));
+    const [lead, next] = [by[0]!, by[1]!];
+    if (lead.phraseMatch >= routing.phraseFloor && (lead.phraseTokens ?? 0) >= (next.phraseTokens ?? 0) + 2) return { kind: 'start', act: lead.act, scores: ranked };
+    return { kind: 'narrow', acts: tied.map((s) => s.act), scores: ranked };
+  }
   return { kind: 'start', act: top.act, scores: ranked };
 }

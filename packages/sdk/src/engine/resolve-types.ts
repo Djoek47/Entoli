@@ -18,6 +18,8 @@ export type ActScore = {
   score: number;
   phraseMatch: number;
   requiredCoverage: number;
+  /** Words in the best matching trigger phrase: a longer phrase is a more specific claim. */
+  phraseTokens?: number;
 };
 
 export type SlotCandidates = Record<string, Candidate[]>;
