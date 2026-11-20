@@ -6,7 +6,7 @@
 import { defineAct, mount, type Mounted, type RemoteChoice } from '@entoli/sdk';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import { acceptProposalAction, proposeAction, undoProposalAction, whyAction, extractDesignAction, resetDesignTweaksAction, tweakDesignAction, changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
+import { startBlankByVoiceAction, acceptProposalAction, proposeAction, undoProposalAction, whyAction, extractDesignAction, resetDesignTweaksAction, tweakDesignAction, changeStatusAction, openPrAction, publishSkillAction, runChecksAction, setActLayerAction, startAnalysisAction, startIntegrationAction, startSandboxAction } from '../../actions';
 import { pickFeatures, STUDIO_SKILL } from '@/lib/studio-skill';
 import { LiveOrb } from './LiveOrb';
 
@@ -48,6 +48,11 @@ export function StudioBar(props: StudioProps) {
     const changeOptions = () => (p().integration?.changes ?? []).map((c) => ({ value: c.id, label: c.title, aliases: [c.file, c.file.split('/').pop() ?? ''] }));
     const offs = [
       defineAct('studio.go', { tab: 'choice' }, ({ tab }) => { const prev = pathRef.current; router.push(`${base}/${String(tab)}`); return prev; }, { undo: (prev) => router.push(String(prev)) }),
+      defineAct('studio.start', { description: 'freeText' }, async ({ description }) => {
+        const r = await startBlankByVoiceAction(String(description));
+        router.push(`/dashboard/apps/${r.appId}/project`);
+        return r;
+      }, { describe: ({ description }) => `Start a new project: ${String(description).slice(0, 80)}`, say: (r) => `Started. I wrote the skill first and a starter app that runs.${(r as { note?: string })?.note ? ` ${(r as { note?: string }).note}` : ''} Connect your coding agent in the Keys tab to build the rest.` }),
       defineAct('studio.analyze', {}, async () => { await startAnalysisAction(props.appId); }, { describe: () => `Analysis of ${p().repo ?? 'the repository'} started`, say: () => 'Reading your repository. When it is done, ask me what to expose.' }),
       defineAct('studio.integrate', { features: 'freeText', layer: 'choice', mode: 'choice', settingsBy: 'choice' }, async (s) => {
         await startIntegrationAction(props.appId, form({

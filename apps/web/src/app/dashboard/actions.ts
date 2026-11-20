@@ -44,6 +44,15 @@ export async function startProjectAction(form: FormData) {
   redirect(`/dashboard/apps/${id}/project`);
 }
 
+/** For the voice act: starts a blank project and returns where to go (no redirect, so the bar can say what happened). */
+export async function startBlankByVoiceAction(description: string, name?: string): Promise<{ appId: string; note?: string }> {
+  const user = await requireUser();
+  const db = await getDb();
+  const { startBlank, nameFromDescription } = await import('@/lib/project');
+  const r = await startBlank(db, user.id, { name: name?.trim() || nameFromDescription(description), description });
+  return { appId: r.appId, ...(r.note ? { note: r.note } : {}) };
+}
+
 export async function startOriginalSandboxAction(appId: string) {
   const user = await requireUser();
   const db = await getDb();

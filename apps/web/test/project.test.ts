@@ -12,7 +12,7 @@ import { getApp, saveSkill, setPlan, upsertUser } from '@/lib/apps';
 import { setChangeStatus } from '@/lib/integration';
 import { createMcpToken, handleMcp } from '@/lib/mcp';
 import { bootSandbox, queueSandbox, runChecks, stopSandbox } from '@/lib/sandbox-boot';
-import { compare, exportZip, projectFilesOf, readProjectFile, startBlank, startRebuild, writeProjectFile } from '@/lib/project';
+import { nameFromDescription, compare, exportZip, projectFilesOf, readProjectFile, startBlank, startRebuild, writeProjectFile } from '@/lib/project';
 import { localProvider } from '@/lib/sandbox';
 
 let db: DB;
@@ -198,5 +198,62 @@ createServer(async (req, res) => {
     await expect(startRebuild(db, u.id, { name: 'Broken', repo: 'acme/broken' }, { source: async () => { throw new Error('Repository not found.'); } })).rejects.toThrow(/not found/);
     const { listApps } = await import('@/lib/apps');
     expect((await listApps(db, u.id)).some((a) => a.name === 'Broken')).toBe(false);
+  });
+});
+
+describe('taking an approval back', () => {
+  it('removes a file the change created, and restores one it replaced', async () => {
+    const u = await user();
+    const r = await startBlank(db, u.id, { name: 'Undo', description: 'a thing' }, { drafter: async () => drafted });
+    await l2(r.appId);
+    const app = (await getApp(db, u.id, r.appId))!;
+    const { token } = await createMcpToken(db, u.id, app.id, 'agent');
+    let id = 0;
+    const submit = async (file: string, content: string) => {
+      const res = await handleMcp(db, { authorization: `Bearer ${token}`, body: { jsonrpc: '2.0', id: ++id, method: 'tools/call', params: { name: 'submit_change', arguments: { file, content, summary: `edit ${file}` } } } });
+      expect((res.body as { result: { isError?: boolean } }).result.isError).toBeUndefined();
+    };
+    const original = (await readProjectFile(db, app.id, 'app.css'))!;
+    await submit('src/new.js', 'export const x = 1;\n');
+    await submit('app.css', 'body { color: red; }\n');
+    const [row] = await db.select().from(integrations).where(eq(integrations.appId, app.id));
+    const [created, replaced] = [row!.changes.find((c) => c.file === 'src/new.js')!, row!.changes.find((c) => c.file === 'app.css')!];
+    for (const c of [created, replaced]) await setChangeStatus(db, row!.id, c.id, 'approved');
+    expect(await readProjectFile(db, app.id, 'src/new.js')).toBe('export const x = 1;\n');
+    expect(await readProjectFile(db, app.id, 'app.css')).toBe('body { color: red; }\n');
+    await setChangeStatus(db, row!.id, created.id, 'rejected');
+    await setChangeStatus(db, row!.id, replaced.id, 'pending');
+    expect(await readProjectFile(db, app.id, 'src/new.js')).toBeNull();
+    expect(await readProjectFile(db, app.id, 'app.css')).toBe(original);
+    // Approving twice, or rejecting something never approved, changes nothing.
+    await setChangeStatus(db, row!.id, created.id, 'rejected');
+    expect(await readProjectFile(db, app.id, 'app.css')).toBe(original);
+  });
+});
+
+describe('starting by voice, and what it costs', () => {
+  it('names a project from the description', () => {
+    expect(nameFromDescription('A todo list with a done screen')).toBe('Todo List Done');
+    expect(nameFromDescription('build me an app for tracking my runs')).toBe('Tracking Runs');
+    expect(nameFromDescription('  ')).toBe('New app');
+  });
+
+  it('limits drafting per day: 2 on the free plan, 10 once you pay', async () => {
+    const free = await user();
+    const d = async () => startBlank(db, free.id, { name: 'F', description: 'x' }, { drafter: async () => drafted });
+    await d(); await d();
+    await expect(d()).rejects.toThrow(/2 new projects a day at most on the free plan/);
+    const paid = await user();
+    const first = await startBlank(db, paid.id, { name: 'P', description: 'x' }, { drafter: async () => drafted });
+    await setPlan(db, first.appId, 'l1', { id: 's', status: 'active' });
+    for (let i = 0; i < 9; i++) await startBlank(db, paid.id, { name: 'P', description: 'x' }, { drafter: async () => drafted });
+    await expect(startBlank(db, paid.id, { name: 'P', description: 'x' }, { drafter: async () => drafted })).rejects.toThrow(/10 new projects a day/);
+  });
+
+  it('is a voice act that asks for a yes (a new project cannot be undone)', async () => {
+    const { STUDIO_SKILL } = await import('@/lib/studio-skill');
+    const a = STUDIO_SKILL.acts.find((x) => x.name === 'studio.start')!;
+    expect(a.undo).toBeFalsy();
+    expect(a.phrases).toContain('start a new project');
   });
 });

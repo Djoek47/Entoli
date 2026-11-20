@@ -382,13 +382,17 @@ export async function setChangeStatus(db: DB, integrationId: string, changeId: s
   if (!row || row.status === 'pr_opened') return;
   const changes = row.changes.map((c) => (c.id === changeId ? { ...c, status } : c));
   await db.update(integrations).set({ changes }).where(eq(integrations.id, integrationId));
-  // In a project built on Entoli there is no repository to open a pull request on: approving writes the file into the project.
-  if (status === 'approved') {
-    const change = row.changes.find((c) => c.id === changeId);
-    const [app] = await db.select({ origin: apps.origin }).from(apps).where(eq(apps.id, row.appId));
-    if (change && app && (app.origin?.kind === 'blank' || app.origin?.kind === 'rebuild')) {
-      const { writeProjectFile } = await import('./project');
-      await writeProjectFile(db, row.appId, change.file, change.content);
+  // In a project built on Entoli there is no repository to open a pull request on: approving writes the file into the project,
+  // and taking an approval back puts the file back the way it was.
+  const change = row.changes.find((c) => c.id === changeId);
+  const [app] = await db.select({ origin: apps.origin }).from(apps).where(eq(apps.id, row.appId));
+  if (change && app && (app.origin?.kind === 'blank' || app.origin?.kind === 'rebuild')) {
+    const { writeProjectFile, deleteProjectFile } = await import('./project');
+    if (status === 'approved' && change.status !== 'approved') await writeProjectFile(db, row.appId, change.file, change.content);
+    else if (status !== 'approved' && change.status === 'approved') {
+      if (change.base === undefined) return; // an older change with no record of the original: leave the file
+      if (change.base === null) await deleteProjectFile(db, row.appId, change.file);
+      else await writeProjectFile(db, row.appId, change.file, change.base);
     }
   }
 }

@@ -107,6 +107,8 @@ export type IntegrationChange = {
   status: 'pending' | 'approved' | 'rejected';
   /** Git blob id of the file as read (null for new files): the PR refuses files that changed since. */
   baseSha?: string | null;
+  /** Projects only: the file's content in the project when this change was submitted (null = it did not exist), so un-approving can put it back. */
+  base?: string | null;
   summary?: string;
 };
 

@@ -221,6 +221,7 @@ async function callTool(db: DB, app: AppRow, name: string, args: Record<string, 
         id: existing?.id ?? randomUUID().slice(0, 8),
         title: summary, file: path, content, status: 'pending', summary,
         baseSha: base ? (base.sha || blobSha(base.content)) : null,
+        ...(project ? { base: base?.content ?? null } : {}),
         diff: createTwoFilesPatch(base ? `a/${path}` : '/dev/null', `b/${path}`, base?.content ?? '', content, '', '', { context: 3 }),
       };
       const changes = existing ? row.changes.map((c) => (c.file === path ? change : c)) : [...row.changes, change];

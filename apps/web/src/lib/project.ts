@@ -19,7 +19,7 @@ import type { DB } from '@/db';
 import { apps, projectFiles, sandboxes } from '@/db/schema';
 import { assertSkill, validateSkill, type Skill } from '@entoli/sdk/skill';
 import { askJson, hasAnthropicKey } from '@entoli/analyzer';
-import { createApp, saveSkill } from './apps';
+import { createApp, listApps, saveSkill } from './apps';
 import { fetchRepo, type Fetched } from './repo-fetch';
 import { normalizePath } from './guardrails';
 import { PLANS } from './plans';
@@ -175,12 +175,25 @@ export async function writeProjectFile(db: DB, appId: string, rawPath: string, c
   await db.insert(projectFiles).values({ appId, path, content }).onConflictDoUpdate({ target: [projectFiles.appId, projectFiles.path], set: { content, updatedAt: new Date() } });
 }
 
+export async function deleteProjectFile(db: DB, appId: string, path: string): Promise<void> {
+  await db.delete(projectFiles).where(and(eq(projectFiles.appId, appId), eq(projectFiles.path, path)));
+}
+
 // ---- starting -------------------------------------------------------------------------------------------------------------------
+
+/** A short name from a description: "a todo list with a done screen" → "Todo List". */
+export function nameFromDescription(description: string): string {
+  const words = description.replace(/[^A-Za-z0-9 ]+/g, ' ').split(/\s+/).filter((w) => w && !/^(a|an|the|my|i|me|build|make|create|app|simple|new|that|which|with|for|and|to|of)$/i.test(w)).slice(0, 3);
+  return words.length ? words.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ') : 'New app';
+}
 
 export async function startBlank(db: DB, ownerId: string, input: { name: string; description: string }, deps: { drafter?: SkillDrafter; bundle?: string } = {}) {
   const description = input.description.trim().slice(0, 2000);
   if (!description) throw new Error('Describe the app you want to build, in a sentence or two.');
-  if (!(await hit(db, `blank:${ownerId}`, 5, 86_400_000)).ok) throw new Error('Five new projects a day at most. Try again tomorrow.');
+  // Drafting costs money: more for people who pay.
+  const paid = (await listApps(db, ownerId)).some((a) => PLANS[a.plan].priceUsd > 0);
+  const perDay = paid ? 10 : 2;
+  if (!(await hit(db, `blank:${ownerId}`, perDay, 86_400_000)).ok) throw new Error(`${perDay} new projects a day at most${paid ? '' : ' on the free plan'}. Try again tomorrow.`);
   const { app } = await createApp(db, ownerId, { name: input.name });
   await db.update(apps).set({ origin: { kind: 'blank', description } }).where(eq(apps.id, app.id));
   const { skill, drafted, note } = await draftSkill(app.name, description, deps.drafter);
